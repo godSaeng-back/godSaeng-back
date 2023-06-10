@@ -15,7 +15,7 @@ class ApiResponse {
 }
 
 // ◎ 회원가입 API
-authos_router.post("/signup", async (req, res, next) => {
+router.post("/signup", async (req, res, next) => {
   const { email, password, nickname, age } = req.body;
   try {
     // 닉네임으로 중복가입 여부 확인
@@ -72,7 +72,7 @@ authos_router.post("/signup", async (req, res, next) => {
         .json({ errorMessage: "패스워드에 닉네임이 포함되어 있습니다." });
       return;
     }
-    const crypyedPw = crypto
+    const cryptedPw = crypto
       .createHash("sha512")
       .update(password)
       .digest("base64");
@@ -81,10 +81,10 @@ authos_router.post("/signup", async (req, res, next) => {
 
     await Users.create({
       email,
-      password: crypyedPw,
+      password: cryptedPw,
       nickname,
-      age,
       createdAt: koreantime,
+      updatedAt: koreantime,
     });
     const response = new ApiResponse(201, "회원가입 성공");
     return res.status(201).json(response);
@@ -96,3 +96,73 @@ authos_router.post("/signup", async (req, res, next) => {
     return res.status(500).json(response);
   }
 });
+
+// ◎  로그인 API
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const loginUser = await Users.findOne({
+      where: { email },
+    });
+    //패스워드 암호화
+    const crypyedPw = crypto
+      .createHash("sha512")
+      .update(password)
+      .digest("base64");
+
+    //디비에 저장된 이메일이 없거나 패스워드가 틀린 경우
+    if (!loginUser || crypyedPw !== loginUser.password) {
+      const response = new ApiResponse(
+        412,
+        "이메일 또는 패스워드를 확인해주세요."
+      );
+      return res.status(412).json(response);
+    }
+
+    //jwt
+    const token = jwt.sign({ userId: loginUser.userId }, "checkLogin_key", {
+      expiresIn: "1d",
+    });
+    //쿠키보내기
+    res.cookie("Authorization", `Bearer ${token}`),
+      {
+        secure: true,
+        maxAge: 3600000,
+        // httpOnly: true,
+        sameSite: "none",
+        // domain: ".gptclone.cz",
+      };
+
+    //헤더에 JWT 넣기
+    res.set({ Authorization: `Bearer ${token}` });
+
+    //토큰보내기
+    const response = new ApiResponse(200, "로그인 성공", {
+      Authorization: `Bearer ${token}`,
+    });
+    return res.status(200).json(response);
+  } catch (error) {
+    const response = new ApiResponse(
+      500,
+      "예상하지 못한 서버 문제가 발생했습니다."
+    );
+    return res.status(500).json(response);
+  }
+});
+
+// ◎  로그아웃 API
+router.post("/logout", checkLogin, async (req, res) => {
+  try {
+    res.clearCookie("Authorization");
+    const response = new ApiResponse(200, "로그아웃 성공");
+    return res.status(200).json(response);
+  } catch {
+    const response = new ApiResponse(
+      500,
+      "예상하지 못한 서버 문제가 발생했습니다."
+    );
+    return res.status(500).json(response);
+  }
+});
+
+module.exports = router;

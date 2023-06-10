@@ -19,9 +19,9 @@ app.use(
   })
 );
 
-// app.get("/", (req, res) => {
-//   res.status(200).send("godSaeng diary backend API");
-// });
+app.get("/", (req, res) => {
+  res.status(200).send("godSaeng diary backend API");
+});
 
 app.listen(3001, () => {
   console.log("3001 포트로 서버 연결");

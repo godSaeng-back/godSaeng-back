@@ -41,17 +41,21 @@ router.post("/signup", async (req, res, next) => {
     const emailCheck =
       /^[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_\.]?[0-9a-zA-Z])*\.[a-zA-Z]{2,3}$/;
     if (!emailCheck.test(email)) {
-      res
-        .status(412)
-        .json({ errorMessage: "이메일 형식이 올바르지 않습니다." });
+      const response = new ApiResponse(
+        412,
+        "이메일의 형식이 올바르지 않습니다"
+      );
+      res.status(412).json(response);
       return;
     }
     // 닉네임 형식확인: 알파벳 대소문자, 숫자, 4~20자
     const nickCheck = /^[0-9a-zA-Z_-]{4,20}$/;
     if (!nickCheck.test(nickname)) {
-      res
-        .status(412)
-        .json({ errorMessage: "닉네임의 형식이 올바르지 않습니다." });
+      const response = new ApiResponse(
+        412,
+        "닉네임의 형식이 올바르지 않습니다"
+      );
+      res.status(412).json(response);
       return;
     }
 
@@ -60,13 +64,19 @@ router.post("/signup", async (req, res, next) => {
     const pwCheck = /^(?=.*[a-z])[A-Za-z\d@$!%*?&]{4,20}$/;
 
     if (!pwCheck.test(password)) {
-      res
-        .status(412)
-        .json({ errorMessage: "패스워드 형식이 올바르지 않습니다." });
+      const response = new ApiResponse(
+        412,
+        "패스워드 형식이 올바르지 않습니다"
+      );
+      res.status(412).json(response);
       return;
     }
     // 패스워드가 닉네임 포함하는지 여부 확인
     if (password.includes(nickname)) {
+      const response = new ApiResponse(
+        412,
+        "패스워드에 닉네임이 포함되어 있습니다."
+      );
       res
         .status(412)
         .json({ errorMessage: "패스워드에 닉네임이 포함되어 있습니다." });

@@ -24,5 +24,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(3001, () => {
-  console.log("3001 포트로 서버 연결");
+  console.log("3002 포트로 서버 연결");
 });

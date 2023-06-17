@@ -204,6 +204,7 @@ router.post('/feed/write', upload.array('images'), checkLogin, async (req, res) 
       return res.status(500).json({ error: '피드 삭제에 실패했습니다.' });
     }
   });
+  
 
   // DELETE /feed/image/:imageId (피드 이미지 삭제)
   router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {

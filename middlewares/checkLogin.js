@@ -18,6 +18,8 @@ module.exports = async (req, res, next) => {
       ? authorizationCookies
       : authorizationHeaders;
 
+    console.log('Authorization : ', Authorization);
+
     // const Authorization = req.header("Authorization"); //토큰을 헤더로 받는 경우
     //토큰이 있는지 확인
     if (!Authorization) {

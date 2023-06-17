@@ -135,14 +135,13 @@ router.post("/login", async (req, res) => {
       expiresIn: "1d",
     });
     //쿠키보내기
-    res.cookie("Authorization", `Bearer ${token}`),
-      {
-        secure: true,
-        maxAge: 3600000,
-        // httpOnly: true,
-        sameSite: "none",
-        // domain: ".gptclone.cz",
-      };
+    res.cookie("Authorization", `Bearer ${token}`, {
+      // secure: true,
+      // maxAge: 3600000,
+      // httpOnly: true,
+      // sameSite: "none",
+      // domain: ".gptclone.cz",
+    });
 
     //헤더에 JWT 넣기
     res.set({ Authorization: `Bearer ${token}` });
@@ -162,7 +161,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ◎  로그아웃 API
-router.post("/logout", checkLogin, async (req, res) => {
+router.post("/logout", async (req, res) => {
   try {
     res.clearCookie("Authorization");
     const response = new ApiResponse(200, "로그아웃 성공");

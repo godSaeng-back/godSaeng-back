@@ -40,7 +40,7 @@ router.get('/main', checkLogin, async (req, res) => {
 // GET / (식단사진 전체 조회)
 router.get('/allmeal', checkLogin, async (req, res) => {
   const { user } = res.locals;
-  
+  console.log('user : ', user);
   if (user) {
     try {
       const feeds = await Feeds.findAll({
@@ -48,7 +48,7 @@ router.get('/allmeal', checkLogin, async (req, res) => {
         include: [
           {
             model: FeedImages,
-            as: 'images',
+            as: 'FeedImages',
             attributes: ['imageId', 'FeedId', 'imagePath'],
           },
         ],
@@ -67,43 +67,46 @@ router.get('/allmeal', checkLogin, async (req, res) => {
 
 // POST /feed/write (피드 작성)
 router.post('/feed/write', upload.array('images'), checkLogin, async (req, res) => {
-    const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } = req.body;
-    const { userId } = res.locals.user;
-    const images = req.files; // Multer에서 업로드된 파일 정보
-  
-    if (emotion === undefined || howEat === undefined || didGym === undefined || goodSleep === undefined) {
-      return res.status(400).json({ error: '모든 항목을 입력해주세요.' });
-    }
-  
-    try {
-      // 먼저 Feed를 생성합니다.
-      const feed = await Feeds.create({
-        UserId: userId,
-        emotion,
-        howEat,
-        didGym,
-        goodSleep,
-        calendarDay,
-        didShare,
-        imagePaths: images.map((image) => image.path), // 업로드 된 이미지 파일의 경로를 저장
+  const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } = req.body;
+  const { userId } = res.locals.user;
+  const images = req.files; // Multer에서 업로드된 파일 정보
+
+  if (emotion === undefined || howEat === undefined || didGym === undefined || goodSleep === undefined) {
+    return res.status(400).json({ error: '모든 항목을 입력해주세요.' });
+  }
+
+  try {
+    // 먼저 Feed를 생성합니다.
+    const feed = await Feeds.create({
+      UserId: userId,
+      emotion,
+      howEat,
+      didGym,
+      goodSleep,
+      calendarDay,
+      didShare,
+    });
+
+    // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
+    const imagePaths = [];
+    if (images && images.length > 0) {
+      images.forEach((image) => {
+        const imagePath = image.path; // 이미지 경로
+        // 이미지 경로를 DB에 저장합니다.
+        FeedImages.create({
+          FeedId: feed.feedId,
+          imagePath,
+        });
+        imagePaths.push(imagePath);
       });
-  
-      // 각 이미지를 FeedImages 테이블에 저장합니다.
-      if (images) {
-        await Promise.all(images.map(async (image) => { // Promise.all을 사용하여 모든 이미지를 한번에 저장합니다.
-          await FeedImages.create({
-            FeedId: feed.feedId,
-            imagePath: image.filename,    // 이미지 경로를 저장합니다.
-          });
-        }));
-      }
-      
-      return res.json({ feed: feed, message: '피드 작성이 완료되었습니다.' });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: '서버 오류입니다.' });
     }
-  });
+
+    return res.json({ feed, imagePaths, message: '피드 작성이 완료되었습니다.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: '서버 오류입니다.' });
+  }
+});
 
   // GET /feed/:feedId (피드 상세 조회)
   router.get('/feed/:feedId', checkLogin, async (req, res) => {
@@ -199,6 +202,39 @@ router.post('/feed/write', upload.array('images'), checkLogin, async (req, res) 
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: '피드 삭제에 실패했습니다.' });
+    }
+  });
+
+  // DELETE /feed/image/:imageId (피드 이미지 삭제)
+  router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {
+    const { imageId } = req.params;
+    const { userId } = res.locals.user;
+
+    try {
+      // 현재 유저가 피드의 소유자인지 확인
+      const feedImage = await FeedImages.findOne({
+        where: { imageId },
+        include: [
+          {
+            model: Feeds,
+            as: 'Feed',
+            attributes: ['feedId', 'UserId'],
+          },
+        ],
+      });
+
+      if (feedImage.Feed.UserId !== userId) {
+        return res.status(403).json({ error: '해당 피드의 이미지를 삭제할 권한이 없습니다.' });
+      }
+
+      // 피드 이미지 삭제
+      await FeedImages.destroy({ where: { imageId } });
+
+      res.json({ message: '피드 이미지 삭제가 완료되었습니다.' });
+
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: '피드 이미지 삭제에 실패했습니다.' });
     }
   });
 

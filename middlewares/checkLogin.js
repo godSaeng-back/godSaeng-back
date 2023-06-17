@@ -11,7 +11,12 @@ class ApiResponse {
 
 module.exports = async (req, res, next) => {
   try {
-    const { Authorization } = req.cookies; // 토큰을 쿠키로 받는경우
+    // const { Authorization } = req.cookies; // 토큰을 쿠키로 받는경우
+    const authorizationCookies = req.cookies.authorization;
+    const authorizationHeaders = req.headers.authorization;
+    const Authorization = authorizationCookies
+      ? authorizationCookies
+      : authorizationHeaders;
 
     // const Authorization = req.header("Authorization"); //토큰을 헤더로 받는 경우
     //토큰이 있는지 확인

@@ -34,14 +34,10 @@ module.exports = {
         allowNull: false, // NOT NULL
         type: Sequelize.BOOLEAN,
       },
-      feedImage: {
-        type: Sequelize.STRING,
-      },
       calendarDay: {
         type: Sequelize.STRING,
       },
       didShare: {
-        allowNull: false, // NOT NULL
         type: Sequelize.BOOLEAN,
       },
       createdAt: {

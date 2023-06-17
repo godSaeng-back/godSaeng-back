@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "userId", // 3. Users 모델의 userId 컬럼을
         foreignKey: "UserId", // 4. Chats 모델의 UserId 컬럼과 연결합니다.
       });
+      this.hasMany(models.FeedImages, {
+        sourceKey: "feedId",
+        foreignKey: "FeedId",
+      });
     }
   }
   Feeds.init(
@@ -48,14 +52,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false, // NOT NULL
         type: DataTypes.BOOLEAN,
       },
-      feedImage: {
-        type: DataTypes.STRING,
-      },
       calendarDay: {
+        allowNull: true,
         type: DataTypes.STRING,
       },
       didShare: {
-        allowNull: false, // NOT NULL
+        allowNull: true,
         type: DataTypes.BOOLEAN,
       },
       createdAt: {

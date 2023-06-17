@@ -4,6 +4,7 @@ const { Users } = require("../models");
 const jwt = require("jsonwebtoken");
 const checkLogin = require("../middlewares/checkLogin.js"); //유저아이디받기
 const crypto = require("crypto");
+const XRegExp = require('xregexp');
 
 // ✖︎ 응답 객체
 class ApiResponse {
@@ -16,7 +17,7 @@ class ApiResponse {
 
 // ◎ 회원가입 API
 router.post("/signup", async (req, res, next) => {
-  const { email, password, nickname, age } = req.body;
+  const { email, password, nickname } = req.body;
   try {
     // 닉네임으로 중복가입 여부 확인
 
@@ -49,7 +50,7 @@ router.post("/signup", async (req, res, next) => {
       return;
     }
     // 닉네임 형식확인: 알파벳 대소문자, 숫자, 4~20자
-    const nickCheck = /^[0-9a-zA-Z_-]{4,20}$/;
+    const nickCheck = XRegExp('^([\\p{L}\\p{N}!@#$%^&*()\\-_=?/+]{1,8})$');
     if (!nickCheck.test(nickname)) {
       const response = new ApiResponse(
         412,

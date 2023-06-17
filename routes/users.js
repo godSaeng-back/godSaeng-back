@@ -162,7 +162,7 @@ router.post("/login", async (req, res) => {
 });
 
 // ◎  로그아웃 API
-router.post("/logout", checkLogin, async (req, res) => {
+router.post("/logout", async (req, res) => {
   try {
     res.clearCookie("Authorization");
     const response = new ApiResponse(200, "로그아웃 성공");

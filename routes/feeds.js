@@ -4,6 +4,7 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const path = require('path');
+const Sequelize = require('sequelize');
 const checkLogin = require('../middlewares/checkLogin.js'); //유저아이디받기
 const { Feeds, Users, FeedImages } = require('../models');
 require('dotenv').config();
@@ -29,15 +30,51 @@ const upload = multer({
 });
 
 // GET / (메인페이지)
+// router.get('/main', checkLogin, async (req, res) => {
+//   const { user } = res.locals;
+
+//   if (user) {
+//     try {
+//       const feeds = await Feeds.findAll({
+//         where: { UserId: user.userId },
+//         order: [['createdAt', 'DESC']],
+//       });
+//       return res.json({ feeds });
+//     } catch (err) {
+//       console.error(err);
+//       return res.status(500).json({ error: '서버 오류입니다.' });
+//     }
+//   } else {
+//     return res.json({ feeds: [] });
+//   }
+// });
+
+// GET / (메인페이지)
 router.get('/main', checkLogin, async (req, res) => {
   const { user } = res.locals;
 
   if (user) {
     try {
-      const feeds = await Feeds.findAll({
+      // 각 날짜의 최신 피드의 createdAt 얻기
+      const feedDates = await Feeds.findAll({
+        attributes: [
+          [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
+          [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt']
+        ],
         where: { UserId: user.userId },
-        order: [['createdAt', 'DESC']],
+        group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
       });
+
+      // 각 날짜의 최신 피드 조회
+      const feeds = await Promise.all(feedDates.map(async (feedDate) => {
+        return await Feeds.findOne({
+          where: {
+            UserId: user.userId,
+            createdAt: feedDate.getDataValue('latestCreatedAt'),
+          },
+        });
+      }));
+
       return res.json({ feeds });
     } catch (err) {
       console.error(err);
@@ -76,13 +113,22 @@ router.get('/allmeal', checkLogin, async (req, res) => {
 });
 
 // POST /feed/write (피드 작성)
-router.post('/feed/write', upload.array('images'), checkLogin, async (req, res) => {
+router.post(
+  '/feed/write',
+  upload.array('images'),
+  checkLogin,
+  async (req, res) => {
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
       req.body;
     const { userId } = res.locals.user;
     const images = req.files; // Multer에서 업로드된 파일 정보
 
-    if ( emotion === undefined || howEat === undefined || didGym === undefined || goodSleep === undefined ) {
+    if (
+      emotion === undefined ||
+      howEat === undefined ||
+      didGym === undefined ||
+      goodSleep === undefined
+    ) {
       return res.status(400).json({ error: '모든 항목을 입력해주세요.' });
     }
 
@@ -209,7 +255,23 @@ router.put(
         }
       );
 
-      // TODO: 이미지 업데이트 로직 추가
+      // 기존에 연결된 이미지들을 삭제
+      await FeedImages.destroy({
+        where: { FeedId: feedId },
+      });
+
+      // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
+      const imagePaths = [];
+      if (images && images.length > 0) {
+        for (const image of images) {
+          // 이미지 경로를 DB에 저장합니다.
+          const feedImage = await FeedImages.create({
+            FeedId: feed.feedId,
+            imagePath: image.location, // 이미지 경로를 S3 URL로 설정
+          });
+          imagePaths.push(feedImage.imagePath);
+        }
+      }
 
       res.json({ message: '피드 수정이 완료되었습니다.' });
     } catch (error) {
@@ -279,7 +341,7 @@ router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {
 });
 
 // GET /feed/least (최근 피드 사진 조회)
-router.get('/feed/least', checkLogin, async (req, res) => {
+router.get('/image/least', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
 
   try {
@@ -292,6 +354,7 @@ router.get('/feed/least', checkLogin, async (req, res) => {
           as: 'Feed',
           attributes: ['feedId', 'UserId'],
           where: { UserId: userId },
+          required: true,
         },
       ],
     });

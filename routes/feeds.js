@@ -72,6 +72,11 @@ router.get('/main', checkLogin, async (req, res) => {
             UserId: user.userId,
             createdAt: feedDate.getDataValue('latestCreatedAt'),
           },
+          include: [{
+            model: FeedImages,  // FeedImages 모델 추가
+            as: 'FeedImages',   // alias 설정
+            attributes: ['imageId', 'FeedId', 'imagePath'],  // 가져올 필드 설정
+          }],
         });
       }));
 
@@ -84,6 +89,7 @@ router.get('/main', checkLogin, async (req, res) => {
     return res.json({ feeds: [] });
   }
 });
+
 
 // GET / (식단사진 전체 조회)
 router.get('/allmeal', checkLogin, async (req, res) => {

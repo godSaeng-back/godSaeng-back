@@ -36,6 +36,7 @@ router.get('/main', checkLogin, async (req, res) => {
 
   if (user) {
     try {
+
       // 각 날짜의 최신 피드의 createdAt 얻기
       const feedDates = await Feeds.findAll({
         attributes: [
@@ -45,6 +46,8 @@ router.get('/main', checkLogin, async (req, res) => {
         where: { UserId: user.userId },
         group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
       });
+      console.log(feedDates)
+      // return res.json({ feedDates });
 
       // 각 날짜의 최신 피드 조회
       const feeds = await Promise.all(feedDates.map(async (feedDate) => {
@@ -215,11 +218,7 @@ router.get('/feed/:feedId', checkLogin, async (req, res) => {
 });
 
 // PUT /feed/:feedId (피드 수정)
-router.put(
-  '/feed/:feedId',
-  upload.array('images'),
-  checkLogin,
-  async (req, res) => {
+router.put('/feed/:feedId', upload.array('images'),  checkLogin,  async (req, res) => {
     const { feedId } = req.params;
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
       req.body;

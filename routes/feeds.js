@@ -135,9 +135,9 @@ router.post(
         }
       });
 
-      if (existingFeedCount > 0) {
-        return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
-      }
+      // if (existingFeedCount > 0) {
+      //   return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
+      // }
 
       // 피드를 생성합니다.
       const feed = await Feeds.create({

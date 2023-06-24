@@ -30,6 +30,15 @@ const upload = multer({
   }),
 });
 
+// upload
+router.post(
+  '/check',
+  async (req, res) => {
+    return res.status(400).json(upload);
+    
+  }
+);
+
 // GET / (메인페이지)
 router.get('/main', checkLogin, async (req, res) => {
   const { user } = res.locals;
@@ -108,6 +117,10 @@ router.post(
   upload.array('images'),
   checkLogin,
   async (req, res) => {
+    // const images = req.files; // Multer에서 업로드된 파일 정보
+
+    // return res.status(400).json({ '성공':'성공', images });
+
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
       req.body;
     const { userId } = res.locals.user;

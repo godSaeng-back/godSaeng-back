@@ -41,9 +41,6 @@ app.get('/', (req, res) => {
   res.status(200).send('godSaeng diary backend API');
 });
 
-// app.listen(3000, () => {
-//   console.log('3000 포트로 서버 연결');
-// });
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

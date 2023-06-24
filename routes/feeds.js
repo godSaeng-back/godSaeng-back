@@ -30,22 +30,20 @@ const upload = multer({
   }),
 });
 
-// upload
-router.post(
-  '/check',
-  async (req, res) => {
-    return res.status(400).json(upload);
-    
+// 응답 객체
+class ApiResponse {
+  constructor(code, message = '', data = {}) {
+      this.code = code;
+      this.message = message;
+      this.data = data;
   }
-);
+}
 
 // GET / (메인페이지)
 router.get('/main', checkLogin, async (req, res) => {
   const { user } = res.locals;
-
   if (user) {
     try {
-
       // 각 날짜의 최신 피드의 createdAt 얻기
       const feedDates = await Feeds.findAll({
         attributes: [
@@ -55,8 +53,6 @@ router.get('/main', checkLogin, async (req, res) => {
         where: { UserId: user.userId },
         group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
       });
-      console.log(feedDates)
-      // return res.json({ feedDates });
 
       // 각 날짜의 최신 피드 조회
       const feeds = await Promise.all(feedDates.map(async (feedDate) => {
@@ -72,8 +68,8 @@ router.get('/main', checkLogin, async (req, res) => {
           }],
         });
       }));
-
-      return res.json({ feeds });
+      const response = new ApiResponse(200, '/main GET 성공', feeds);
+      return res.status(200).json( response );
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: '서버 오류입니다.' });

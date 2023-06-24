@@ -5,13 +5,6 @@ const indexRouter = require('./routes/index.js');
 const app = express();
 const cors = require('cors');
 
-
-// EB 배포 위해 필요한 설정
-const createError = require('http-errors');
-const path = require('path');
-const logger = require('morgan');
-
-
 // CORS 설정
 app.use(
   cors({
@@ -26,6 +19,10 @@ app.use(
   })
 );
 
+// EB 배포 위해 필요한 설정
+const createError = require('http-errors');
+const path = require('path');
+const logger = require('morgan');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -38,6 +35,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.get('/', (req, res) => {
+  res.status(200).send('godSaeng diary backend API');
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

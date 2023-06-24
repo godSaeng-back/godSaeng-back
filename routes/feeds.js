@@ -4,9 +4,10 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const path = require('path');
-const Sequelize = require('sequelize');
+// const Sequelize = require('sequelize');
 const checkLogin = require('../middlewares/checkLogin.js'); //유저아이디받기
 const { Feeds, Users, FeedImages } = require('../models');
+const { Op, Sequelize } = require('sequelize');
 require('dotenv').config();
 
 aws.config.update({
@@ -28,26 +29,6 @@ const upload = multer({
     },
   }),
 });
-
-// GET / (메인페이지)
-// router.get('/main', checkLogin, async (req, res) => {
-//   const { user } = res.locals;
-
-//   if (user) {
-//     try {
-//       const feeds = await Feeds.findAll({
-//         where: { UserId: user.userId },
-//         order: [['createdAt', 'DESC']],
-//       });
-//       return res.json({ feeds });
-//     } catch (err) {
-//       console.error(err);
-//       return res.status(500).json({ error: '서버 오류입니다.' });
-//     }
-//   } else {
-//     return res.json({ feeds: [] });
-//   }
-// });
 
 // GET / (메인페이지)
 router.get('/main', checkLogin, async (req, res) => {
@@ -139,7 +120,26 @@ router.post(
     }
 
     try {
-      // 먼저 Feed를 생성합니다.
+      const date = new Date();
+      const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+      // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
+      const existingFeedCount = await Feeds.count({
+        where: {
+          UserId: userId,
+          createdAt: {
+            [Op.gte]: startDate,
+            [Op.lt]: endDate
+          }
+        }
+      });
+
+      if (existingFeedCount > 0) {
+        return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
+      }
+
+      // 피드를 생성합니다.
       const feed = await Feeds.create({
         UserId: userId,
         emotion,
@@ -154,7 +154,6 @@ router.post(
       const imagePaths = [];
       if (images && images.length > 0) {
         for (const image of images) {
-          // 이미지 경로를 DB에 저장합니다.
           const feedImage = await FeedImages.create({
             FeedId: feed.feedId,
             imagePath: image.location, // 이미지 경로를 S3 URL로 설정
@@ -347,12 +346,12 @@ router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {
 });
 
 // GET /feed/least (최근 피드 사진 조회)
-router.get('/image/least', checkLogin, async (req, res) => {
+router.get('/image/latest', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
 
   try {
     const feedImages = await FeedImages.findAll({
-      limit: 6,
+      limit: 3, // 최근 3개의 피드 사진만 조회
       order: [['createdAt', 'DESC']],
       include: [
         {

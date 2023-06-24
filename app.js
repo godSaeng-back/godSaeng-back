@@ -9,11 +9,13 @@ const cors = require('cors');
 app.use(
   cors({
     origin: [
-      // '*.go-getter.shop', 
-      'http://localhost:3002',
-      'https://go-getter.shop',
+      'https://api.go-getter2.shop', 
+      'https://go-getter2.shop',
       'http://go-getter.shop',
       'http://localhost:3000',
+      'http://localhost:3002',
+      'https://god-saeng-life-fe-test.vercel.app',
+      'https://god-saeng-life-git-master-zadragon.vercel.app',
     ],
     credentials: true,
   })

@@ -39,8 +39,48 @@ class ApiResponse {
   }
 }
 
-// GET / (메인페이지)
+// ◎  메인페이지 조회
 router.get('/main', checkLogin, async (req, res) => {
+  const { userId } = res.locals.user;
+  if (userId) {
+    try {
+      // 각 날짜의 최신 피드의 createdAt 얻기
+      const feedDates = await Feeds.findAll({
+        attributes: [
+          [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
+          [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt']
+        ],
+        where: { UserId: userId },
+        group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
+      });
+
+      // 각 날짜의 최신 피드 조회
+      const feeds = await Promise.all(feedDates.map(async (feedDate) => {
+        return await Feeds.findOne({
+          where: {
+            UserId: user.userId,
+            createdAt: feedDate.getDataValue('latestCreatedAt'),
+          },
+          include: [{
+            model: FeedImages,  // FeedImages 모델 추가
+            as: 'FeedImages',   // alias 설정
+            attributes: ['imageId', 'imagePath'],  // 가져올 필드 설정
+          }],
+        });
+      }));
+      // const response = new ApiResponse(200, '/main GET 성공', feeds);
+      return res.status(201).json({feeds});
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: '서버 오류입니다.' });
+    }
+  } else {
+    return res.json({ feeds: [] });
+  }
+});
+
+// ◎  메인페이지 월전환
+router.get('/main/:month', checkLogin, async (req, res) => {
   const { user } = res.locals;
   if (user) {
     try {
@@ -80,7 +120,8 @@ router.get('/main', checkLogin, async (req, res) => {
 });
 
 
-// GET / (식단사진 전체 조회)
+
+// ◎ GET / (식단사진 전체 조회)
 router.get('/allmeal', checkLogin, async (req, res) => {
   const { user } = res.locals;
   console.log('user : ', user);
@@ -107,16 +148,12 @@ router.get('/allmeal', checkLogin, async (req, res) => {
   }
 });
 
-// POST /feed/write (피드 작성)
+//  ◎ POST /feed/write (피드 작성)
 router.post(
   '/feed/write',
   upload.array('images'),
   checkLogin,
   async (req, res) => {
-    // const images = req.files; // Multer에서 업로드된 파일 정보
-
-    // return res.status(400).json({ '성공':'성공', images });
-
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
       req.body;
     const { userId } = res.locals.user;
@@ -186,7 +223,7 @@ router.post(
   }
 );
 
-// GET /feed/:feedId (피드 상세 조회)
+// ◎ GET /feed/:feedId (피드 상세 조회)
 router.get('/feed/:feedId', checkLogin, async (req, res) => {
   const { feedId } = req.params;
 
@@ -226,7 +263,7 @@ router.get('/feed/:feedId', checkLogin, async (req, res) => {
   }
 });
 
-// PUT /feed/:feedId (피드 수정)
+// ◎ PUT /feed/:feedId (피드 수정)
 router.put('/feed/:feedId', upload.array('images'),  checkLogin,  async (req, res) => {
     const { feedId } = req.params;
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
@@ -294,7 +331,7 @@ router.put('/feed/:feedId', upload.array('images'),  checkLogin,  async (req, re
   }
 );
 
-// DELETE /feed/:feedId (피드 삭제)
+// ◎ DELETE /feed/:feedId (피드 삭제)
 router.delete('/feed/:feedId', checkLogin, async (req, res) => {
   const { feedId } = req.params;
   const { userId } = res.locals.user;
@@ -353,7 +390,7 @@ router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {
   }
 });
 
-// GET /feed/least (최근 피드 사진 조회)
+// ◎ GET /feed/least (최근 피드 사진 조회)
 router.get('/image/latest', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
 

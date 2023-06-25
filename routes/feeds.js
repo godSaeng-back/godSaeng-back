@@ -68,8 +68,8 @@ router.get('/main', checkLogin, async (req, res) => {
           }],
         });
       }));
-      const response = new ApiResponse(200, '/main GET 성공', feeds);
-      return res.status(200).json( response );
+      // const response = new ApiResponse(200, '/main GET 성공', feeds);
+      return res.status(200).json({feeds});
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: '서버 오류입니다.' });

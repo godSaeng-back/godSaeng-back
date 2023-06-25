@@ -64,12 +64,12 @@ router.get('/main', checkLogin, async (req, res) => {
           include: [{
             model: FeedImages,  // FeedImages 모델 추가
             as: 'FeedImages',   // alias 설정
-            attributes: ['imageId', 'FeedId', 'imagePath'],  // 가져올 필드 설정
+            attributes: ['imageId', 'imagePath'],  // 가져올 필드 설정
           }],
         });
       }));
       // const response = new ApiResponse(200, '/main GET 성공', feeds);
-      return res.status(200).json({feeds});
+      return res.status(201).json({feeds});
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: '서버 오류입니다.' });

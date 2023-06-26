@@ -18,6 +18,15 @@ module.exports = {
         },
         onDelete: "CASCADE",
       },
+      userId: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+          model: "Users",
+          key: "userId",
+        },
+        onDelete: "CASCADE",
+      },
       imagePath: {
         allowNull: false,
         type: Sequelize.STRING,

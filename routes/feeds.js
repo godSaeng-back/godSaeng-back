@@ -25,7 +25,7 @@ const upload = multer({
     bucket: "god-seangler2",
     acl: "public-read",
     key: function (req, file, cb) {
-      cb(null, Date.now().toString() + path.extname(file.originalname));
+      cb(null, Date.now().toString() + path.basename(file.originalname));
     },
   }),
 });
@@ -176,6 +176,8 @@ router.post(
     const { emotion, howEat, didGym, goodSleep, didShare } = req.body;
     const { userId } = res.locals.user;
     const images = req.files; // Multer에서 업로드된 파일 정보
+
+    console.log(req.files);
 
     if (
       emotion === undefined ||

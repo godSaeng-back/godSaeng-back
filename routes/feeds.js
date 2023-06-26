@@ -90,7 +90,7 @@ router.get("/main", checkLogin, async (req, res) => {
       return res.status(200).json({ feeds });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: "서버 오류입니다." });
+      return res.status(500).json({ error: "서버 오류입니다" });
     }
   } else {
     return res.json({ user: null, feeds: [] });

@@ -36,38 +36,29 @@ router.get('/main', checkLogin, async (req, res) => {
 
   if (user) {
     try {
-      // 각 날짜의 최신 피드의 createdAt 얻기
-      const feedDates = await Feeds.findAll({
-        attributes: [
-          [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
-          [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt']
-        ],
+      const feeds = await Feeds.findAll({
         where: { UserId: user.userId },
-        group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
+        include: [
+          {
+            model: FeedImages, // FeedImages 모델 추가
+            as: 'FeedImages', // alias 설정
+            attributes: ['imageId', 'FeedId', 'imagePath'], // 가져올 필드 설정
+          },
+        ],
       });
 
-      // 각 날짜의 최신 피드 조회
-      const feeds = await Promise.all(feedDates.map(async (feedDate) => {
-        return await Feeds.findOne({
-          where: {
-            UserId: user.userId,
-            createdAt: feedDate.getDataValue('latestCreatedAt'),
-          },
-          include: [{
-            model: FeedImages,  // FeedImages 모델 추가
-            as: 'FeedImages',   // alias 설정
-            attributes: ['imageId', 'FeedId', 'imagePath'],  // 가져올 필드 설정
-          }],
-        });
-      }));
+      const userInfo = await Users.findOne({
+        where: { userId: user.userId },
+        attributes: ['userId', 'nickname', 'profileImage'], // 가져올 필드 설정
+      });
 
-      return res.json({ feeds });
+      return res.json({ user: userInfo, feeds });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: '서버 오류입니다.' });
     }
   } else {
-    return res.json({ feeds: [] });
+    return res.json({ user: null, feeds: [] });
   }
 });
 
@@ -102,7 +93,7 @@ router.get('/allmeal', checkLogin, async (req, res) => {
 // POST /feed/write (피드 작성)
 router.post(
   '/feed/write',
-  upload.array('images'),
+  upload.array('images', 5),
   checkLogin,
   async (req, res) => {
     const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
@@ -121,8 +112,16 @@ router.post(
 
     try {
       const date = new Date();
-      const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+      const startDate = new Date( // 오늘의 날짜 00:00:00 ~
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+      const endDate = new Date(   // 오늘의 날짜 ~ 23:59:59
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() + 1
+      );
 
       // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
       const existingFeedCount = await Feeds.count({
@@ -130,13 +129,15 @@ router.post(
           UserId: userId,
           createdAt: {
             [Op.gte]: startDate,
-            [Op.lt]: endDate
-          }
-        }
+            [Op.lt]: endDate,
+          },
+        },
       });
 
       if (existingFeedCount > 0) {
-        return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
+        return res
+          .status(400)
+          .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
       }
 
       // 피드를 생성합니다.
@@ -155,6 +156,7 @@ router.post(
       if (images && images.length > 0) {
         for (const image of images) {
           const feedImage = await FeedImages.create({
+            userId: userId,
             FeedId: feed.feedId,
             imagePath: image.location, // 이미지 경로를 S3 URL로 설정
           });

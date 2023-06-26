@@ -1,20 +1,10 @@
-// var express = require('express');
-// var router = express.Router();
-
-// /* GET users listing. */
-// router.get('/', function(req, res, next) {
-//   res.send('respond with a resource');
-// });
-
-// module.exports = router;
-
 const express = require("express");
 const router = express.Router();
 const { Users } = require("../models");
 const jwt = require("jsonwebtoken");
 const checkLogin = require("../middlewares/checkLogin.js"); //유저아이디받기
 const crypto = require("crypto");
-const XRegExp = require('xregexp');
+const XRegExp = require("xregexp");
 
 // ✖︎ 응답 객체
 class ApiResponse {
@@ -60,7 +50,7 @@ router.post("/signup", async (req, res, next) => {
       return;
     }
     // 닉네임 형식확인: 알파벳 대소문자, 숫자, 4~20자
-    const nickCheck = XRegExp('^([\\p{L}\\p{N}!@#$%^&*()\\-_=?/+]{1,8})$');
+    const nickCheck = XRegExp("^([\\p{L}\\p{N}!@#$%^&*()\\-_=?/+]{1,8})$");
     if (!nickCheck.test(nickname)) {
       const response = new ApiResponse(
         412,

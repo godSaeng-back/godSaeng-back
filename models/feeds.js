@@ -52,10 +52,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false, // NOT NULL
         type: DataTypes.BOOLEAN,
       },
-      calendarDay: {
-        allowNull: true,
-        type: DataTypes.STRING,
-      },
       didShare: {
         allowNull: true,
         type: DataTypes.BOOLEAN,

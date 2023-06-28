@@ -27,6 +27,7 @@ const upload = multer({
     key: function (req, file, cb) {
       cb(null, Date.now().toString() + path.basename(file.originalname));
     },
+    limits: { fileSize: 5 * 1024 * 10240000 }, // 파일크기 제한 설정
   }),
 });
 
@@ -188,71 +189,71 @@ router.post(
       return res.status(400).json({ error: "모든 항목을 입력해주세요." });
     }
 
-    try {
-      const date = new Date();
-      const startDate = new Date( // 오늘의 날짜 00:00:00 ~
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
-      const endDate = new Date( // 오늘의 날짜 ~ 23:59:59
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate() + 1
-      );
+    // try {
+    const date = new Date();
+    const startDate = new Date( // 오늘의 날짜 00:00:00 ~
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const endDate = new Date( // 오늘의 날짜 ~ 23:59:59
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() + 1
+    );
 
-      // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
-      const existingFeedCount = await Feeds.count({
-        where: {
-          UserId: userId,
-          createdAt: {
-            [Op.gte]: startDate,
-            [Op.lt]: endDate,
-          },
-        },
-      });
-
-      // if (existingFeedCount > 0) {
-      //   return res
-      //     .status(400)
-      //     .json({ error: "오늘은 이미 피드를 작성하셨습니다." });
-      // }
-      // if (existingFeedCount > 0) {
-      //   return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
-      // }
-
-      // 피드를 생성합니다.
-      const feed = await Feeds.create({
+    // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
+    const existingFeedCount = await Feeds.count({
+      where: {
         UserId: userId,
-        emotion,
-        howEat,
-        didGym,
-        goodSleep,
-        didShare,
-      });
+        createdAt: {
+          [Op.gte]: startDate,
+          [Op.lt]: endDate,
+        },
+      },
+    });
 
-      // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
-      const imagePaths = [];
-      if (images && images.length > 0) {
-        for (const image of images) {
-          const feedImage = await FeedImages.create({
-            userId: userId,
-            FeedId: feed.feedId,
-            imagePath: image.location, // 이미지 경로를 S3 URL로 설정
-          });
-          imagePaths.push(feedImage.imagePath);
-        }
+    // if (existingFeedCount > 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "오늘은 이미 피드를 작성하셨습니다." });
+    // }
+    // if (existingFeedCount > 0) {
+    //   return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
+    // }
+
+    // 피드를 생성합니다.
+    const feed = await Feeds.create({
+      UserId: userId,
+      emotion,
+      howEat,
+      didGym,
+      goodSleep,
+      didShare,
+    });
+
+    // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
+    const imagePaths = [];
+    if (images && images.length > 0) {
+      for (const image of images) {
+        const feedImage = await FeedImages.create({
+          userId: userId,
+          FeedId: feed.feedId,
+          imagePath: image.location, // 이미지 경로를 S3 URL로 설정
+        });
+        imagePaths.push(feedImage.imagePath);
       }
-
-      return res.json({
-        feed,
-        imagePaths,
-        message: "피드 작성이 완료되었습니다.",
-      });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: "서버 오류입니다." });
     }
+
+    return res.json({
+      feed,
+      imagePaths,
+      message: "피드 작성이 완료되었습니다.",
+    });
+    // } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "서버 오류입니다." });
+    // }
   }
 );
 

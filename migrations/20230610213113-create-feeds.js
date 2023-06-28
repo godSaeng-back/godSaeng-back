@@ -34,9 +34,7 @@ module.exports = {
         allowNull: false, // NOT NULL
         type: Sequelize.BOOLEAN,
       },
-      calendarDay: {
-        type: Sequelize.STRING,
-      },
+
       didShare: {
         type: Sequelize.BOOLEAN,
       },

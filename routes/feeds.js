@@ -25,7 +25,7 @@ const upload = multer({
     bucket: "god-seangler2",
     acl: "public-read",
     key: function (req, file, cb) {
-      cb(null, Date.now().toString() + path.extname(file.originalname));
+      cb(null, Date.now().toString() + path.basename(file.originalname));
     },
   }),
 });
@@ -48,9 +48,10 @@ router.get("/main", checkLogin, async (req, res) => {
   const startDate = new Date(date.getFullYear(), date.getMonth()); // 2023-06-01
   // 유저가 접속한 해당월의 마지막 날(30일 or 31일)
   const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0); // 2023-06-30
+  console.log(startDate, endDate);
+
   if (userId) {
     try {
-
       // 각 날짜의 최신 피드의 createdAt 얻기
       const feedDates = await Feeds.findAll({
         attributes: [
@@ -59,7 +60,7 @@ router.get("/main", checkLogin, async (req, res) => {
         ],
         where: {
           UserId: userId,
-          calendarDay: {
+          createdAt: {
             [Op.gte]: startDate,
             [Op.lte]: endDate,
           },
@@ -89,7 +90,7 @@ router.get("/main", checkLogin, async (req, res) => {
       return res.status(200).json({ feeds });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: "서버 오류입니다." });
+      return res.status(500).json({ error: "서버 오류입니다" });
     }
   } else {
     return res.json({ user: null, feeds: [] });
@@ -101,7 +102,7 @@ router.get("/main", checkLogin, async (req, res) => {
 //   const { userId } = res.locals.user;
 //   const { month } = req.params;
 
-//   if (userId) { 
+//   if (userId) {
 //     try {
 //       // 해당월(:month) 모든 날짜의 최신 피드의 createdAt 얻기
 //       const feedDates = await Feeds.findAll({
@@ -167,15 +168,16 @@ router.get("/allmeal", checkLogin, async (req, res) => {
 
 //  ◎ POST /feed/write (피드 작성)
 router.post(
-  '/feed/write',
-  upload.array('images', 5),
+  "/feed/write",
+  upload.array("images", 5),
 
   checkLogin,
   async (req, res) => {
-    const { emotion, howEat, didGym, goodSleep, calendarDay, didShare } =
-      req.body;
+    const { emotion, howEat, didGym, goodSleep, didShare } = req.body;
     const { userId } = res.locals.user;
     const images = req.files; // Multer에서 업로드된 파일 정보
+
+    console.log(req.files);
 
     if (
       emotion === undefined ||
@@ -189,13 +191,11 @@ router.post(
     try {
       const date = new Date();
       const startDate = new Date( // 오늘의 날짜 00:00:00 ~
-
         date.getFullYear(),
         date.getMonth(),
         date.getDate()
       );
-      const endDate = new Date(   // 오늘의 날짜 ~ 23:59:59
-
+      const endDate = new Date( // 오늘의 날짜 ~ 23:59:59
         date.getFullYear(),
         date.getMonth(),
         date.getDate() + 1
@@ -212,11 +212,11 @@ router.post(
         },
       });
 
-      if (existingFeedCount > 0) {
-        return res
-          .status(400)
-          .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
-      }
+      // if (existingFeedCount > 0) {
+      //   return res
+      //     .status(400)
+      //     .json({ error: "오늘은 이미 피드를 작성하셨습니다." });
+      // }
       // if (existingFeedCount > 0) {
       //   return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
       // }
@@ -228,7 +228,6 @@ router.post(
         howEat,
         didGym,
         goodSleep,
-        calendarDay,
         didShare,
       });
 

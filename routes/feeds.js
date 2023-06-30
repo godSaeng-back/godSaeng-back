@@ -93,7 +93,7 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
-      const feeds1 = feedsOrigin.map((feed) => {
+      const feeds = feedsOrigin.map((feed) => {
         return {
           feedId: feed.feedId,
           userId: feed.UserId,
@@ -109,7 +109,7 @@ router.get("/main", checkLogin, async (req, res) => {
       });
 
       // const response = new ApiResponse(200, "/main GET 성공", feeds);
-      return res.status(200).json({ feeds1 });
+      return res.status(200).json({ feeds });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ error: "서버 오류입니다" });

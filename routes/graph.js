@@ -35,8 +35,9 @@ router.get('/graph/:type', checkLogin, async (req, res) => {
         // 조회할 시작과 끝 날짜 설정
         let startDate, endDate;
         if (type === 'week') {
-            // 주간 데이터 조회일 경우
-            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+            // 주간 데이터 조회일 경우, 월요일부터 일요일까지
+            const toDay = today.getDay();
+            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ((toDay === 0 ? 6 : toDay - 1)));
             endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         } else if (type === 'month') {
             // 월간 데이터 조회일 경우
@@ -58,6 +59,10 @@ router.get('/graph/:type', checkLogin, async (req, res) => {
             date: '',
         }));
 
+        let howEatScore = 0;
+        let didGymScore = 0;
+        let goodSleepScore = 0;
+
         // 각 피드 데이터에 대해 점수를 계산하고, 해당 날짜의 데이터 구조에 저장
         for (let i = 0; i < allFeeds.length; i++) {
             const feed = allFeeds[i];
@@ -66,6 +71,19 @@ router.get('/graph/:type', checkLogin, async (req, res) => {
 
             // howEat, didGym, goodSleep에 대해 점수 부여
             const graphScore = (feed.howEat ? 1 : 0) + (feed.didGym ? 1 : 0) + (feed.goodSleep ? 1 : 0);
+
+            // 조회할 기간에 해당하는 피드 데이터인 경우, 해당 점수를 누적
+            if (feedDate >= startDate && feedDate < endDate) {
+                if (feed.howEat) {
+                    howEatScore++;
+                }
+                if (feed.didGym) {
+                    didGymScore++;
+                }
+                if (feed.goodSleep) {
+                    goodSleepScore++;
+                }
+            }
 
             // 해당 날짜의 데이터 구조에 피드의 정보와 계산한 점수를 저장
             periodData[dayIndex] = {
@@ -78,8 +96,7 @@ router.get('/graph/:type', checkLogin, async (req, res) => {
             };
         }
         
-        // 전체 피드 작성한 총 날짜 수, 전체 피드에 대한 포인트 점수의 총합, 기간 동안의 피드 데이터를 응답으로 반환
-        return res.json({totalFeedDays, totalPointScore, periodData});
+        return res.json({totalFeedDays, totalPointScore, howEatScore, didGymScore, goodSleepScore, periodData});
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: '서버 오류입니다.' });

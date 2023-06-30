@@ -56,7 +56,7 @@ router.get("/main", checkLogin, async (req, res) => {
     return new Date(date.getTime() + 9 * hours);
   };
 
-  console.log(koreanTime(startDate, endDate));
+  console.log(koreanTime(startDate), koreanTime(endDate));
 
   if (userId) {
     try {
@@ -76,7 +76,7 @@ router.get("/main", checkLogin, async (req, res) => {
         group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
       });
       // 각 날짜의 최신 피드 조회
-      const feeds = await Promise.all(
+      const feedsOrigin = await Promise.all(
         feedDates.map(async (feedDate) => {
           return await Feeds.findOne({
             where: {
@@ -93,12 +93,25 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
-      // console.log(originFeeds);
-      // const feeds = originFeeds.map(() => {});
-      // const response = new ApiResponse(200, '/main GET 성공', feeds);
+      const feeds = feedsOrigin.map((feed) => {
+        return {
+          feedId: feed.feedId,
+          userId: feed.UserId,
+          emotion: feed.emotion,
+          howEat: feed.howEat,
+          didGym: feed.didGym,
+          goodSleep: feed.goodSleep,
+          didShare: feed.didShare,
+          createdAt: koreanTime(feed.createdAt),
+          updatedAt: koreanTime(feed.updatedAt),
+          FeedImages: feed.FeedImages,
+        };
+      });
+
+      // const response = new ApiResponse(200, "/main GET 성공", feeds);
       return res.status(200).json({ feeds });
     } catch (err) {
-      console.error(err);
+      console.log(err);
       return res.status(500).json({ error: "서버 오류입니다" });
     }
   } else {

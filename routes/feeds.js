@@ -48,9 +48,9 @@ router.get("/main", checkLogin, async (req, res) => {
 
   const date = new Date();
   // 유저가 접속한 해당월의 첫 날(1일)
-  const startDate = new Date(date.getFullYear(), date.getMonth()); // 2023-06-01
+  const startDate = new Date(date.getFullYear(), date.getMonth()); // 2023-07-01
   // 유저가 접속한 해당월의 마지막 날(30일 or 31일)
-  const endDate = new Date(date.getFullYear(), date.getMonth() + 1); // 2023-06-30
+  const endDate = new Date(date.getFullYear(), date.getMonth() + 1); // 2023-08-01
 
   const koreanTime = (date) => {
     return new Date(date.getTime() + 9 * hours);

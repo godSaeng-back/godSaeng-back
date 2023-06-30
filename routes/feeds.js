@@ -56,10 +56,7 @@ router.get("/main", checkLogin, async (req, res) => {
     return new Date(date.getTime() + 9 * hours);
   };
 
-  // const korStartDate = new Date(startDate.getTime() + 9 * hours);
-  // const korEndDate = new Date(endDate.getTime() + 9 * hours);
-
-  console.log(koreanTime(startDate));
+  console.log(koreanTime(startDate, endDate));
 
   if (userId) {
     try {
@@ -359,7 +356,6 @@ router.put(
       //   where: { FeedId: feedId },
       // });
 
-
       // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
       const currentImages = await FeedImages.findAll({
         where: { FeedId: feed.feedId },
@@ -381,6 +377,7 @@ router.put(
             FeedId: feed.feedId,
             imagePath: image.location, // 이미지 경로를 S3 URL로 설정
           });
+          imagePaths.push(feedImage.imagePath);
         }
       }
 

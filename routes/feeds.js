@@ -343,12 +343,24 @@ router.put(
       );
 
       // 기존에 연결된 이미지들을 삭제
-      await FeedImages.destroy({
-        where: { FeedId: feedId },
-      });
+      // await FeedImages.destroy({
+      //   where: { FeedId: feedId },
+      // });
+
 
       // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
-      const imagePaths = [];
+      const currentImages = await FeedImages.findAll({
+        where: { FeedId: feed.feedId },
+      });
+
+      // 이미지가 5개 이상이면 업로드 불가
+      if (currentImages.length + images.length > 5) {
+        return res
+          .status(400)
+          .json({ error: "이미지는 최대 5개까지만 업로드 가능합니다." });
+      }
+
+      // 새 이미지 업로드
       if (images && images.length > 0) {
         for (const image of images) {
           // 이미지 경로를 DB에 저장합니다.
@@ -356,7 +368,6 @@ router.put(
             FeedId: feed.feedId,
             imagePath: image.location, // 이미지 경로를 S3 URL로 설정
           });
-          imagePaths.push(feedImage.imagePath);
         }
       }
 

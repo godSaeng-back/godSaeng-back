@@ -43,12 +43,16 @@ class ApiResponse {
 // ◎  메인페이지 조회
 router.get("/main", checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
+  let hours = 1 * 60 * 60 * 1000;
 
   const date = new Date();
   // 유저가 접속한 해당월의 첫 날(1일)
   const startDate = new Date(date.getFullYear(), date.getMonth()); // 2023-06-01
   // 유저가 접속한 해당월의 마지막 날(30일 or 31일)
-  const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0); // 2023-06-30
+  const endDate = new Date(date.getFullYear(), date.getMonth() + 1); // 2023-06-30
+
+  const hourPlus = new Date(startDate.getTime() + 9 * hours);
+
   console.log(startDate, endDate);
 
   if (userId) {
@@ -68,7 +72,6 @@ router.get("/main", checkLogin, async (req, res) => {
         },
         group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
       });
-
       // 각 날짜의 최신 피드 조회
       const feeds = await Promise.all(
         feedDates.map(async (feedDate) => {

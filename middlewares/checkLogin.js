@@ -13,12 +13,12 @@ module.exports = async (req, res, next) => {
   try {
     // const { Authorization } = req.cookies; // 토큰을 쿠키로 받는경우
     const authorizationCookies = req.cookies.Authorization;
-    const authorizationHeaders = req.header('Authorization');
+    const authorizationHeaders = req.header("Authorization");
     const Authorization = authorizationCookies
       ? authorizationCookies
       : authorizationHeaders;
 
-    console.log('Authorization : ', Authorization);
+    console.log("Authorization : ", Authorization);
 
     // const Authorization = req.header("Authorization"); //토큰을 헤더로 받는 경우
     //토큰이 있는지 확인
@@ -43,6 +43,7 @@ module.exports = async (req, res, next) => {
     res.locals.user = user;
     next();
   } catch (error) {
+    console.log(error);
     const response = new ApiResponse(
       500,
       "예상하지 못한 서버 문제가 발생했습니다."

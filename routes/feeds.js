@@ -8,6 +8,7 @@ const path = require("path");
 const checkLogin = require("../middlewares/checkLogin.js"); //유저아이디받기
 const { Feeds, Users, FeedImages } = require("../models");
 const { Op, Sequelize } = require("sequelize");
+
 require("dotenv").config();
 
 aws.config.update({
@@ -51,9 +52,14 @@ router.get("/main", checkLogin, async (req, res) => {
   // 유저가 접속한 해당월의 마지막 날(30일 or 31일)
   const endDate = new Date(date.getFullYear(), date.getMonth() + 1); // 2023-06-30
 
-  const hourPlus = new Date(startDate.getTime() + 9 * hours);
+  const koreanTime = (date) => {
+    return new Date(date.getTime() + 9 * hours);
+  };
 
-  console.log(startDate, endDate);
+  // const korStartDate = new Date(startDate.getTime() + 9 * hours);
+  // const korEndDate = new Date(endDate.getTime() + 9 * hours);
+
+  console.log(koreanTime(startDate));
 
   if (userId) {
     try {
@@ -90,6 +96,8 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
+      // console.log(originFeeds);
+      // const feeds = originFeeds.map(() => {});
       // const response = new ApiResponse(200, '/main GET 성공', feeds);
       return res.status(200).json({ feeds });
     } catch (err) {
@@ -357,6 +365,7 @@ router.put(
         for (const image of images) {
           // 이미지 경로를 DB에 저장합니다.
           const feedImage = await FeedImages.create({
+            userId: userId,
             FeedId: feed.feedId,
             imagePath: image.location, // 이미지 경로를 S3 URL로 설정
           });

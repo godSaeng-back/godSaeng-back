@@ -2,6 +2,8 @@
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+.enextensions/*
+
 
 # Logs
 logs

@@ -44,7 +44,7 @@ class ApiResponse {
 // ◎  메인페이지 조회
 router.get("/main", checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
-  let hours = 1 * 60 * 60 * 1000;
+  const hours = 1 * 60 * 60 * 1000;
 
   const date = new Date();
   // 유저가 접속한 해당월의 첫 날(1일)
@@ -102,8 +102,8 @@ router.get("/main", checkLogin, async (req, res) => {
           didGym: feed.didGym,
           goodSleep: feed.goodSleep,
           didShare: feed.didShare,
-          createdAt: koreanTime(feed.createdAt),
-          updatedAt: koreanTime(feed.updatedAt),
+          createdAt: feed.createdAt,
+          updatedAt: feed.updatedAt,
           FeedImages: feed.FeedImages,
         };
       });

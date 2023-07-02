@@ -44,7 +44,7 @@ class ApiResponse {
 // ◎  메인페이지 조회
 router.get("/main", checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
-  let hours = 1 * 60 * 60 * 1000;
+  const hours = 1 * 60 * 60 * 1000;
 
   const date = new Date();
   // 유저가 접속한 해당월의 첫 날(1일)
@@ -76,7 +76,7 @@ router.get("/main", checkLogin, async (req, res) => {
         group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
       });
       // 각 날짜의 최신 피드 조회
-      const feedsOrigin = await Promise.all(
+      const feeds = await Promise.all(
         feedDates.map(async (feedDate) => {
           return await Feeds.findOne({
             where: {
@@ -93,20 +93,20 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
-      const feeds = feedsOrigin.map((feed) => {
-        return {
-          feedId: feed.feedId,
-          userId: feed.UserId,
-          emotion: feed.emotion,
-          howEat: feed.howEat,
-          didGym: feed.didGym,
-          goodSleep: feed.goodSleep,
-          didShare: feed.didShare,
-          createdAt: koreanTime(feed.createdAt),
-          updatedAt: koreanTime(feed.updatedAt),
-          FeedImages: feed.FeedImages,
-        };
-      });
+      // const feeds = feedsOrigin.map((feed) => {
+      //   return {
+      //     feedId: feed.feedId,
+      //     userId: feed.UserId,
+      //     emotion: feed.emotion,
+      //     howEat: feed.howEat,
+      //     didGym: feed.didGym,
+      //     goodSleep: feed.goodSleep,
+      //     didShare: feed.didShare,
+      //     createdAt: feed.createdAt,
+      //     updatedAt: feed.updatedAt,
+      //     FeedImages: feed.FeedImages,
+      //   };
+      // });
 
       // const response = new ApiResponse(200, "/main GET 성공", feeds);
       return res.status(200).json({ feeds });

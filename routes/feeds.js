@@ -496,4 +496,44 @@ router.get("/image/latest", checkLogin, async (req, res) => {
   }
 });
 
+// DELETE /feed/:feedId/allImage (특정 피드의 이미지 전체 삭제)
+router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
+  const { userId } = res.locals.user;
+  const { feedId } = req.params; // 피드 ID를 URL에서 가져옵니다.
+
+  try {
+    // 현재 유저가 피드의 소유자인지 확인
+    const feedImages = await FeedImages.findAll({
+      include: [
+        {
+          model: Feeds,
+          as: "Feed",
+          attributes: ["feedId", "UserId"],
+          where: { 
+            feedId: feedId,  // 피드 ID를 이용해서 검색합니다.
+            UserId: userId 
+          },
+          required: true,
+        },
+      ],
+    });
+
+    if (feedImages.length === 0) {
+      return res.status(403).json({ error: "해당 이미지 삭제 권한이 없습니다." });
+    }
+
+    // 피드 이미지 삭제
+    await FeedImages.destroy({
+      where: {
+        FeedId: feedId,  // 피드 ID를 이용해서 이미지를 삭제합니다.
+      },
+    });
+
+    res.json({ message: "피드 이미지 전체 삭제가 완료되었습니다." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "피드 이미지 전체 삭제에 실패했습니다." });
+  }
+});
+
 module.exports = router;

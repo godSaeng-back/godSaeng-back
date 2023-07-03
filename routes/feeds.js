@@ -23,7 +23,7 @@ const s3 = new aws.S3();
 const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
+    bucket: "god-seangler2",
     acl: "public-read",
     key: function (req, file, cb) {
       cb(null, Date.now().toString() + path.basename(file.originalname));
@@ -93,20 +93,6 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
-      // const feeds = feedsOrigin.map((feed) => {
-      //   return {
-      //     feedId: feed.feedId,
-      //     userId: feed.UserId,
-      //     emotion: feed.emotion,
-      //     howEat: feed.howEat,
-      //     didGym: feed.didGym,
-      //     goodSleep: feed.goodSleep,
-      //     didShare: feed.didShare,
-      //     createdAt: feed.createdAt,
-      //     updatedAt: feed.updatedAt,
-      //     FeedImages: feed.FeedImages,
-      //   };
-      // });
 
       // const response = new ApiResponse(200, "/main GET 성공", feeds);
       return res.status(200).json({ feeds });

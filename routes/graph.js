@@ -51,11 +51,9 @@ router.get("/graph/:type", checkLogin, async (req, res) => {
       startDate = new Date(today.getFullYear(), today.getMonth(), 1);
       endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // 다음 달 1일로 설정
     } else {
-      return res
-        .status(400)
-        .json({
-          error: "알 수 없는 타입입니다. 파라미터는 week or month 입니다.",
-        });
+      return res.status(400).json({
+        error: "알 수 없는 타입입니다. 파라미터는 week or month 입니다.",
+      });
     }
 
     const periodDays = Math.floor(

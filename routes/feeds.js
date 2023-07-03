@@ -23,7 +23,7 @@ const s3 = new aws.S3();
 const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
+    bucket: "god-seangler2",
     acl: "public-read",
     key: function (req, file, cb) {
       cb(null, Date.now().toString() + path.basename(file.originalname));
@@ -93,20 +93,6 @@ router.get("/main", checkLogin, async (req, res) => {
           });
         })
       );
-      // const feeds = feedsOrigin.map((feed) => {
-      //   return {
-      //     feedId: feed.feedId,
-      //     userId: feed.UserId,
-      //     emotion: feed.emotion,
-      //     howEat: feed.howEat,
-      //     didGym: feed.didGym,
-      //     goodSleep: feed.goodSleep,
-      //     didShare: feed.didShare,
-      //     createdAt: feed.createdAt,
-      //     updatedAt: feed.updatedAt,
-      //     FeedImages: feed.FeedImages,
-      //   };
-      // });
 
       // const response = new ApiResponse(200, "/main GET 성공", feeds);
       return res.status(200).json({ feeds });
@@ -120,46 +106,65 @@ router.get("/main", checkLogin, async (req, res) => {
 });
 
 // ◎  메인페이지 월전환
-// router.get('/main/:month', checkLogin, async (req, res) => {
-//   const { userId } = res.locals.user;
-//   const { month } = req.params;
+router.get("/main/:month", checkLogin, async (req, res) => {
+  const { userId } = res.locals.user;
+  const { month } = req.params;
+  console.log(month);
 
-//   if (userId) {
-//     try {
-//       // 해당월(:month) 모든 날짜의 최신 피드의 createdAt 얻기
-//       const feedDates = await Feeds.findAll({
-//         attributes: [
-//           [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
-//           [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt']
-//         ],
-//         where: { UserId: userId },
-//         group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
-//       });
+  const date = new Date();
+  // 유저가 접속한 해당월의 첫 날(1일)
+  const startDate = new Date(date.getFullYear(), month - 1); // 2023-07-01
+  // 유저가 접속한 해당월의 마지막 날(30일 or 31일)
+  const endDate = new Date(date.getFullYear(), month); // 2023-08-01
 
-//       // 각 날짜의 최신 피드 조회
-//       const feeds = await Promise.all(feedDates.map(async (feedDate) => {
-//         return await Feeds.findOne({
-//           where: {
-//             UserId: userId,
-//             createdAt: feedDate.getDataValue('latestCreatedAt'),
-//           },
-//           include: [{
-//             model: FeedImages,  // FeedImages 모델 추가
-//             as: 'FeedImages',   // alias 설정
-//             attributes: ['imageId', 'imagePath'],  // 가져올 필드 설정
-//           }],
-//         });
-//       }));
-//       // const response = new ApiResponse(200, '/main GET 성공', feeds);
-//       return res.status(201).json({feeds});
-//     } catch (err) {
-//       console.error(err);
-//       return res.status(500).json({ error: '서버 오류입니다.' });
-//     }
-//   } else {
-//     return res.json({ feeds: [] });
-//   }
-// });
+  console.log(startDate, endDate, userId);
+
+  if (userId) {
+    try {
+      // 각 날짜의 최신 피드의 createdAt 얻기
+      const feedDates = await Feeds.findAll({
+        attributes: [
+          [Sequelize.fn("date", Sequelize.col("createdAt")), "date"],
+          [Sequelize.fn("max", Sequelize.col("createdAt")), "latestCreatedAt"],
+        ],
+        where: {
+          UserId: userId,
+          createdAt: {
+            [Op.gte]: startDate,
+            [Op.lte]: endDate,
+          },
+        },
+        group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
+      });
+      // 각 날짜의 최신 피드 조회
+      const feeds = await Promise.all(
+        feedDates.map(async (feedDate) => {
+          return await Feeds.findOne({
+            where: {
+              UserId: userId,
+              createdAt: feedDate.getDataValue("latestCreatedAt"),
+            },
+            include: [
+              {
+                model: FeedImages, // FeedImages 모델 추가
+                as: "FeedImages", // alias 설정
+                attributes: ["imageId", "imagePath"], // 가져올 필드 설정
+              },
+            ],
+          });
+        })
+      );
+
+      // const response = new ApiResponse(200, "/main GET 성공", feeds);
+      return res.status(200).json({ feeds });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ error: "서버 오류입니다" });
+    }
+  } else {
+    return res.json({ user: null, feeds: [] });
+  }
+});
 
 // ◎ GET / (식단사진 전체 조회)
 router.get("/allmeal", checkLogin, async (req, res) => {

@@ -509,9 +509,9 @@ router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
           model: Feeds,
           as: "Feed",
           attributes: ["feedId", "UserId"],
-          where: { 
-            feedId: feedId,  // 피드 ID를 이용해서 검색합니다.
-            UserId: userId 
+          where: {
+            feedId: feedId, // 피드 ID를 이용해서 검색합니다.
+            UserId: userId,
           },
           required: true,
         },
@@ -519,20 +519,24 @@ router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
     });
 
     if (feedImages.length === 0) {
-      return res.status(403).json({ error: "해당 이미지 삭제 권한이 없습니다." });
+      return res
+        .status(403)
+        .json({ error: "해당 이미지 삭제 권한이 없습니다." });
     }
 
     // 피드 이미지 삭제
     await FeedImages.destroy({
       where: {
-        FeedId: feedId,  // 피드 ID를 이용해서 이미지를 삭제합니다.
+        FeedId: feedId, // 피드 ID를 이용해서 이미지를 삭제합니다.
       },
     });
 
     res.json({ message: "피드 이미지 전체 삭제가 완료되었습니다." });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "피드 이미지 전체 삭제에 실패했습니다." });
+    return res
+      .status(500)
+      .json({ error: "피드 이미지 전체 삭제에 실패했습니다." });
   }
 });
 

@@ -26,6 +26,10 @@ module.exports = {
         allowNull: false, // NOT NULL
         type: Sequelize.STRING,
       },
+      shareName: {
+        allowNull: false, // NOT NULL
+        type: Sequelize.STRING,
+      },
       imagePath: {
         allowNull: false, // NOT NULL
         type: Sequelize.STRING,

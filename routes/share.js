@@ -51,23 +51,6 @@ router.post(
       const { title, content, anonymous } = req.body;
       const graphImage = req.file; // Multer에서 업로드된 파일 정보
 
-      // 조회할 타입 (week or month)
-      const today = new Date();
-
-      // 조회할 시작과 끝 날짜 설정
-      let startDate, endDate;
-      // 주간 데이터 조회일 경우, 월요일부터 일요일까지
-      const toDay = today.getDay();
-      startDate = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() - (toDay === 0 ? 6 : toDay - 1)
-      );
-      endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      console.log(startDate, endDate);
-      console.log(title, content, anonymous);
-
       const shareFeed = await Shares.create({
         UserId: userId,
         title,

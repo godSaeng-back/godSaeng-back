@@ -23,7 +23,7 @@ const s3 = new aws.S3();
 const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: "god-seangler2",
+    bucket: process.env.AWS_BUCKET_NAME,
     acl: "public-read",
     key: function (req, file, cb) {
       cb(null, Date.now().toString() + path.basename(file.originalname));
@@ -388,6 +388,10 @@ router.put(
 
       // 새 이미지 업로드
       if (images && images.length > 0) {
+
+        // imagePaths 초기화
+        let imagePaths = [];
+
         for (const image of images) {
           // 이미지 경로를 DB에 저장합니다.
           const feedImage = await FeedImages.create({

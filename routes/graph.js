@@ -1,117 +1,116 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const checkLogin = require("../middlewares/checkLogin.js");
-const { Feeds, Users, FeedImages } = require("../models");
+const checkLogin = require('../middlewares/checkLogin.js');
+const { Op } = require('sequelize');
+const { Feeds, Users, FeedImages } = require('../models');
 
-// GET /graph/week (주간 그래프)
-router.get("/graph/:type", checkLogin, async (req, res) => {
+// GET /graph/:type/:period? (주간 혹은 월간 그래프)
+router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
   try {
-    // 로그인한 사용자의 userId 가져옴
+    // 로그인한 사용자의 userId를 가져옵니다.
     const { userId } = res.locals.user;
+    
+    // period 파라미터가 있으면 정수로 변환하고, 없으면 0을 기본값으로 사용합니다.
+    // 이때 period가 1이면 이후 기간, -1이면 이전 기간을 나타냅니다.
+    const period = req.params.period ? -parseInt(req.params.period, 10) : 0;
 
-    // 조회할 타입 (week or month)
-    const type = req.params.type;
     const today = new Date();
+    let startDate, endDate, periodDays;
 
-    // 전체 피드 데이터를 가져옴
+    if (req.params.type === 'week') {
+      // 오늘 요일을 구하고 월요일로 설정합니다.
+      const day = today.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+
+      // 시작 날짜와 종료 날짜를 설정합니다.
+      startDate = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + diffToMonday - period * 7
+      );
+      endDate = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate() + 6
+      );
+      endDate.setHours(23, 59, 59, 999);
+      periodDays = 7;
+    } else if (req.params.type === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth() - period, 1);
+      endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      endDate.setHours(23, 59, 59, 999); // 종료 날짜의 시간을 23시 59분 59초 999밀리초로 설정합니다.
+      periodDays = endDate.getDate();
+    } else {
+      return res.status(400).json({ error: '타입은 week 혹은 month 입니다.' });
+    }
+
+    // 해당 기간 동안의 피드를 모두 불러옵니다.
     const allFeeds = await Feeds.findAll({
       where: {
         UserId: userId,
+        createdAt: {
+          [Op.gte]: startDate,
+          [Op.lt]: endDate,
+        },
       },
       include: [
         {
           model: FeedImages,
-          attributes: ["imageId", "FeedId", "imagePath"],
+          attributes: ['imageId', 'FeedId', 'imagePath'],
         },
       ],
-      attributes: ["createdAt", "howEat", "didGym", "goodSleep", "emotion"],
+      attributes: ['createdAt', 'howEat', 'didGym', 'goodSleep', 'emotion'],
     });
 
-    const totalFeedDays = allFeeds.length; // 전체 피드 작성한 총 날짜 수
+    // 피드 통계를 계산합니다.
+    const totalFeedDays = allFeeds.length;
     const totalPointScore = allFeeds.reduce((acc, feed) => {
-      // FeedImages와 emotion에 대해 점수 부여해서 전체 피드에 대한 점수 총합 계산
       const pointScore =
         (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
       return acc + pointScore;
     }, 0);
 
-    // 조회할 시작과 끝 날짜 설정
-    let startDate, endDate;
-    if (type === "week") {
-      // 주간 데이터 조회일 경우, 월요일부터 일요일까지
-      const toDay = today.getDay();
-      startDate = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate() - (toDay === 0 ? 6 : toDay - 1)
-      );
-      endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-    } else if (type === "month") {
-      // 월간 데이터 조회일 경우
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1); // 다음 달 1일로 설정
-    } else {
-      return res.status(400).json({
-        error: "알 수 없는 타입입니다. 파라미터는 week or month 입니다.",
-      });
-    }
-
-    const periodDays = Math.floor(
-      (endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)
-    ); // 주 혹은 월의 총 일수 계산
-
-    // 주 혹은 월의 일수에 맞는 데이터 구조를 생성
-    const periodData = new Array(periodDays).fill().map(() => ({
-      graphScore: 0,
-      howEat: null,
-      didGym: null,
-      goodSleep: null,
-      emotion: null,
-      date: "",
-    }));
-
     let howEatScore = 0;
     let didGymScore = 0;
     let goodSleepScore = 0;
 
-    // 각 피드 데이터에 대해 점수를 계산하고, 해당 날짜의 데이터 구조에 저장
-    for (let i = 0; i < allFeeds.length; i++) {
-      const feed = allFeeds[i];
-      const feedDate = new Date(feed.createdAt);
-      const dayIndex = Math.floor(
-        (feedDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)
-      );
-
-      // howEat, didGym, goodSleep에 대해 점수 부여
-      const graphScore =
-        (feed.howEat ? 1 : 0) +
-        (feed.didGym ? 1 : 0) +
-        (feed.goodSleep ? 1 : 0);
-
-      // 조회할 기간에 해당하는 피드 데이터인 경우, 해당 점수를 누적
-      if (feedDate >= startDate && feedDate < endDate) {
-        if (feed.howEat) {
-          howEatScore++;
-        }
-        if (feed.didGym) {
-          didGymScore++;
-        }
-        if (feed.goodSleep) {
-          goodSleepScore++;
-        }
+    allFeeds.forEach((feed) => {
+      if (feed.howEat) {
+        howEatScore++;
       }
+      if (feed.didGym) {
+        didGymScore++;
+      }
+      if (feed.goodSleep) {
+        goodSleepScore++;
+      }
+    });
 
-      // 해당 날짜의 데이터 구조에 피드의 정보와 계산한 점수를 저장
-      periodData[dayIndex] = {
-        graphScore: graphScore,
-        howEat: feed.howEat ? true : false,
-        didGym: feed.didGym ? true : false,
-        goodSleep: feed.goodSleep ? true : false,
-        emotion: feed.emotion,
-        date: feedDate.toLocaleDateString(),
+    // 각 기간에 대한 데이터를 생성합니다.
+    const periodData = new Array(periodDays).fill().map((_, index) => {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(currentDate.getDate() + index);
+
+      const feed = allFeeds.find((feed) => {
+        const feedDate = new Date(feed.createdAt);
+        return feedDate.toDateString() === currentDate.toDateString();
+      });
+
+      return {
+        graphScore: feed
+          ? (feed.howEat ? 1 : 0) +
+            (feed.didGym ? 1 : 0) +
+            (feed.goodSleep ? 1 : 0)
+          : 0,
+        howEat: feed ? feed.howEat : null,
+        didGym: feed ? feed.didGym : null,
+        goodSleep: feed ? feed.goodSleep : null,
+        emotion: feed ? feed.emotion : null,
+        date: currentDate.toLocaleDateString(),
       };
-    }
+    });
 
+    // 결과를 반환합니다.
     return res.json({
       totalFeedDays,
       totalPointScore,
@@ -122,7 +121,7 @@ router.get("/graph/:type", checkLogin, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "서버 오류입니다." });
+    return res.status(500).json({ error: '서버 오류입니다.' });
   }
 });
 

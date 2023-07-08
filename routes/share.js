@@ -103,11 +103,6 @@ const imageUpload = async (base64) => {
   // To delete, see: https://gist.github.com/SylarRuby/b3b1430ca633bc5ffec29bbcdac2bd52
 };
 
-router.post("/testapi", async (req, res) => {
-  res.send(await imageUpload(req.body.base64));
-  res.status(200);
-});
-
 // ◎ 공유 작성
 router.post("/share", checkLogin, async (req, res) => {
   const adjectives = [

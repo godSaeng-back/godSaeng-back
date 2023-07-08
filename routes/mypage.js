@@ -38,6 +38,61 @@ async function sendMail(to, subject, template, context) {
   });
 }
 
+// // GET /mypage(마이페이지)
+// router.get('/mypage', checkLogin, async (req, res) => {
+//   try {
+//     // 로그인한 사용자의 userId 가져옴
+//     const { userId } = res.locals.user;
+
+//     // 유저 이미지, 닉네임, 이메일 가져옴
+//     const user = await Users.findOne({
+//       where: {
+//         userId: userId,
+//       },
+//       attributes: [
+//         'userId',
+//         'email',
+//         'profileImage',
+//         'nickname',
+//         'createdAt',
+//         'updatedAt',
+//       ],
+//     });
+
+//     // 공유한 피드 가져오기
+//     const sharedFeeds = await Feeds.findAll({
+//       where: {
+//         UserId: userId,
+//         didShare: true,
+//       },
+//       include: [
+//         {
+//           model: FeedImages,
+//           attributes: ['imageId', 'FeedId', 'imagePath'],
+//         },
+//       ],
+//       attributes: [
+//         'feedId',
+//         'UserId',
+//         'emotion',
+//         'howEat',
+//         'didGym',
+//         'goodSleep',
+//         'createdAt',
+//         'updatedAt',
+//       ],
+//     });
+
+//     return res.status(200).json({
+//       user: user,
+//       sharedFeeds: sharedFeeds,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: '서버 에러' });
+//   }
+// });
+
 // GET /mypage(마이페이지)
 router.get('/mypage', checkLogin, async (req, res) => {
   try {
@@ -59,11 +114,10 @@ router.get('/mypage', checkLogin, async (req, res) => {
       ],
     });
 
-    // 공유한 피드 가져오기
-    const sharedFeeds = await Feeds.findAll({
+    // 사용자의 전체 피드 가져오기
+    const allFeeds = await Feeds.findAll({
       where: {
         UserId: userId,
-        didShare: true,
       },
       include: [
         {
@@ -78,20 +132,34 @@ router.get('/mypage', checkLogin, async (req, res) => {
         'howEat',
         'didGym',
         'goodSleep',
+        'didShare',
         'createdAt',
         'updatedAt',
       ],
     });
 
+    // 공유한 피드 필터링
+    const sharedFeeds = allFeeds.filter(feed => feed.didShare);
+
+    // 전체 피드 중 이미지가 있거나 감정이 있는 피드에 대한 총 점수 계산
+    const totalPointScore = allFeeds.reduce((acc, feed) => {
+      // FeedImages와 emotion에 대해 점수 부여해서 전체 피드에 대한 점수 총합 계산
+      const pointScore =
+        (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
+      return acc + pointScore;
+    }, 0);
+
     return res.status(200).json({
       user: user,
       sharedFeeds: sharedFeeds,
+      totalPointScore: totalPointScore,
     });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: '서버 에러' });
   }
 });
+
 
 // PUT /mypage/nickname (닉네임 변경)
 router.put('/mypage/nickname', checkLogin, async (req, res) => {

@@ -28,16 +28,16 @@ aws.config.update({
 const s3 = new aws.S3();
 
 // Multer Storage 설정
-const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    acl: "public-read",
-    key: function (req, file, cb) {
-      cb(null, Date.now().toString() + path.basename(file.originalname));
-    },
-  }),
-});
+// const upload = multer({
+//   storage: multerS3({
+//     s3: s3,
+//     bucket: process.env.AWS_BUCKET_NAME,
+//     acl: "public-read",
+//     key: function (req, file, cb) {
+//       cb(null, Date.now().toString() + path.basename(file.originalname));
+//     },
+//   }),
+// });
 
 // const imageUpload = async (base64) => {
 //   // You can either "yarn add aws-sdk" or "npm i aws-sdk"

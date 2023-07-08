@@ -4,6 +4,8 @@ const cookieParser = require("cookie-parser");
 const indexRouter = require("./routes/index.js");
 const app = express();
 const cors = require("cors");
+const multer = require("multer");
+// const upload3 = multer();
 
 // CORS 설정
 app.use(
@@ -35,6 +37,7 @@ app.use(express.json());
 // app.use(express.urlencoded({ extended: false }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+// app.use(upload3.array());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);

@@ -31,7 +31,7 @@ module.exports = {
         type: Sequelize.STRING,
       },
       imagePath: {
-        allowNull: false, // NOT NULL
+        allowNull: true, // NOT NULL
         type: Sequelize.STRING,
       },
       anonymous: {

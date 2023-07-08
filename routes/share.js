@@ -376,10 +376,10 @@ router.post("/share", checkLogin, async (req, res) => {
   try {
     // 로그인한 사용자의 userId 가져옴
     const { userId } = res.locals.user;
-    const { title, content, anonymous } = req.body;
+    const { title, content, anonymous, base64 } = req.body;
     // const graphImage = req.file; // Multer에서 업로드된 파일 정보
-    const imgLocation = await imageUpload(req.body.base64);
-    console.log(imgLocation);
+
+    const imgLocation = base64 ? await imageUpload(base64) : null;
     const sharer = await Users.findOne({
       where: {
         UserId: userId,

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const checkLogin = require('../middlewares/checkLogin.js');
-const { Feeds, Users, FeedImages } = require('../models');
+const { Users, Feeds, Likes, Shares, FeedImages } = require('../models');
 const XRegExp = require('xregexp');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -38,61 +38,6 @@ async function sendMail(to, subject, template, context) {
   });
 }
 
-// // GET /mypage(마이페이지)
-// router.get('/mypage', checkLogin, async (req, res) => {
-//   try {
-//     // 로그인한 사용자의 userId 가져옴
-//     const { userId } = res.locals.user;
-
-//     // 유저 이미지, 닉네임, 이메일 가져옴
-//     const user = await Users.findOne({
-//       where: {
-//         userId: userId,
-//       },
-//       attributes: [
-//         'userId',
-//         'email',
-//         'profileImage',
-//         'nickname',
-//         'createdAt',
-//         'updatedAt',
-//       ],
-//     });
-
-//     // 공유한 피드 가져오기
-//     const sharedFeeds = await Feeds.findAll({
-//       where: {
-//         UserId: userId,
-//         didShare: true,
-//       },
-//       include: [
-//         {
-//           model: FeedImages,
-//           attributes: ['imageId', 'FeedId', 'imagePath'],
-//         },
-//       ],
-//       attributes: [
-//         'feedId',
-//         'UserId',
-//         'emotion',
-//         'howEat',
-//         'didGym',
-//         'goodSleep',
-//         'createdAt',
-//         'updatedAt',
-//       ],
-//     });
-
-//     return res.status(200).json({
-//       user: user,
-//       sharedFeeds: sharedFeeds,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({ error: '서버 에러' });
-//   }
-// });
-
 // GET /mypage(마이페이지)
 router.get('/mypage', checkLogin, async (req, res) => {
   try {
@@ -115,6 +60,33 @@ router.get('/mypage', checkLogin, async (req, res) => {
     });
 
     // 사용자의 전체 피드 가져오기
+    // const allFeeds = await Feeds.findAll({
+    //   where: {
+    //     UserId: userId,
+    //   },
+    //   include: [
+    //     {
+    //       model: FeedImages,
+    //       attributes: ['imageId', 'FeedId', 'imagePath'],
+    //     },
+    //   ],
+    //   attributes: [
+    //     'feedId',
+    //     'UserId',
+    //     'emotion',
+    //     'howEat',
+    //     'didGym',
+    //     'goodSleep',
+    //     'didShare',
+    //     'createdAt',
+    //     'updatedAt',
+    //   ],
+    // });
+
+    // // 공유한 피드 필터링
+    // const sharedFeeds = allFeeds.filter((feed) => feed.didShare);
+
+    // 사용자의 전체 피드 가져오기
     const allFeeds = await Feeds.findAll({
       where: {
         UserId: userId,
@@ -125,21 +97,8 @@ router.get('/mypage', checkLogin, async (req, res) => {
           attributes: ['imageId', 'FeedId', 'imagePath'],
         },
       ],
-      attributes: [
-        'feedId',
-        'UserId',
-        'emotion',
-        'howEat',
-        'didGym',
-        'goodSleep',
-        'didShare',
-        'createdAt',
-        'updatedAt',
-      ],
+      attributes: ['feedId', 'emotion'],
     });
-
-    // 공유한 피드 필터링
-    const sharedFeeds = allFeeds.filter(feed => feed.didShare);
 
     // 전체 피드 중 이미지가 있거나 감정이 있는 피드에 대한 총 점수 계산
     const totalPointScore = allFeeds.reduce((acc, feed) => {
@@ -149,9 +108,48 @@ router.get('/mypage', checkLogin, async (req, res) => {
       return acc + pointScore;
     }, 0);
 
+    // 사용자가 작성한 모든 Shares 가져오기
+    const sharedShares = await Shares.findAll({
+      where: {
+        UserId: userId,
+      },
+      attributes: [
+        'shareId',
+        'title',
+        'content',
+        'shareName',
+        'imagePath',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    // 사용자가 좋아요를 누른 게시물 가져오기
+    const likedShares = await Likes.findAll({
+      where: {
+        UserId: userId,
+      },
+      include: [
+        {
+          model: Shares,
+          attributes: [
+            'shareId',
+            'title',
+            'content',
+            'shareName',
+            'imagePath',
+            'createdAt',
+            'updatedAt',
+          ],
+        },
+      ],
+    });
+
     return res.status(200).json({
       user: user,
-      sharedFeeds: sharedFeeds,
+      // sharedFeeds: sharedFeeds,
+      sharedShares: sharedShares,
+      likedShares: likedShares,
       totalPointScore: totalPointScore,
     });
   } catch (err) {
@@ -159,7 +157,6 @@ router.get('/mypage', checkLogin, async (req, res) => {
     return res.status(500).json({ error: '서버 에러' });
   }
 });
-
 
 // PUT /mypage/nickname (닉네임 변경)
 router.put('/mypage/nickname', checkLogin, async (req, res) => {
@@ -290,9 +287,7 @@ router.put('/mypage/password', checkLogin, async (req, res) => {
 
     // 인증 코드가 없을 경우
     if (!authCode) {
-      return res
-        .status(401)
-        .json({ error: '인증 코드를 입력해주세요.' });
+      return res.status(401).json({ error: '인증 코드를 입력해주세요.' });
     }
 
     // 로그인한 사용자의 정보를 다시 불러옴
@@ -335,23 +330,22 @@ router.put('/mypage/password', checkLogin, async (req, res) => {
 
 // 회원탈퇴
 router.delete('/mypage/userdel', checkLogin, async (req, res) => {
-    try {
-        // 로그인한 사용자의 userId 가져옴
-        const { userId } = res.locals.user;
+  try {
+    // 로그인한 사용자의 userId 가져옴
+    const { userId } = res.locals.user;
 
-        // 사용자 정보 삭제
-        await Users.destroy({
-            where: {
-                userId: userId,
-            },
-        });
+    // 사용자 정보 삭제
+    await Users.destroy({
+      where: {
+        userId: userId,
+      },
+    });
 
-        return res.status(200).json({ message: "회원탈퇴 성공" });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "서버 에러" });
-    }
+    return res.status(200).json({ message: '회원탈퇴 성공' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: '서버 에러' });
+  }
 });
 
 module.exports = router;

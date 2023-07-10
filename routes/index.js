@@ -6,6 +6,7 @@ const usersRoutes = require("./users");
 const graphRoutes = require("./graph");
 const mypageRoutes = require("./mypage");
 const shareRoutes = require("./share");
+const likesRoutes = require("./likes");
 
 router.use("/", [
   shareRoutes,
@@ -13,6 +14,7 @@ router.use("/", [
   usersRoutes,
   graphRoutes,
   mypageRoutes,
+  likesRoutes,
 ]);
 
 module.exports = router;

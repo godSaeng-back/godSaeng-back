@@ -5,7 +5,9 @@ const multerS3 = require("multer-s3");
 const aws = require("aws-sdk");
 const path = require("path");
 const checkLogin = require("../middlewares/checkLogin.js");
-const { Users, Shares } = require("../models");
+const { Shares, Users, Likes, ViewCounts, sequelize } = require("../models");
+const adjectives = require('./adjectives');
+const nouns = require('./nouns');
 
 const { Op, Sequelize } = require("sequelize");
 
@@ -96,274 +98,48 @@ const imageUpload = async (base64) => {
   return location;
 };
 
+// 공유글 목록 전체 조회 (무한 스크롤)
+router.get("/share/list", async (req, res) => {
+  // 한 페이지에 보여줄 항목의 수
+  const limit = 10;
+
+  // 페이지 번호
+  const page = req.query.page ? Number(req.query.page) : 1;
+
+  try {
+    const shares = await Shares.findAll({
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: Users,
+          attributes: ["nickname"],
+        },
+      ],
+      offset: (page - 1) * limit,
+      limit: limit,
+    });
+
+    // 각 공유글의 좋아요 수와 조회수를 계산합니다.
+    for (let share of shares) {
+      const likesCount = await Likes.count({ where: { ShareId: share.shareId } });
+      const viewsCount = await ViewCounts.count({ where: { ShareId: share.shareId } });
+
+      share.setDataValue('likeCount', likesCount);
+      share.setDataValue('viewCount', viewsCount);
+    }
+
+    const response = new ApiResponse(200, "공유글 목록 조회 성공", shares);
+    return res.json(response);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: "서버 오류입니다." });
+  }
+});
+
+
 // ◎ 공유 작성
 router.post("/share", checkLogin, async (req, res) => {
-  const adjectives = [
-    "착한",
-    "똑똑한",
-    "유쾌한",
-    "기분좋은",
-    "즐거운",
-    "활기찬",
-    "열정적인",
-    "창의적인",
-    "대담한",
-    "용감한",
-    "친절한",
-    "품위있는",
-    "명랑한",
-    "상냥한",
-    "영리한",
-    "빠른",
-    "재빠른",
-    "자유로운",
-    "긍정적인",
-    "꾸준한",
-    "따뜻한",
-    "느긋한",
-    "재치있는",
-    "끈기있는",
-    "용맹스러운",
-    "귀여운",
-    "아름다운",
-    "풍부한",
-    "자신감있는",
-    "발랄한",
-    "유능한",
-    "다재다능한",
-    "도전적인",
-    "용기있는",
-    "기민한",
-    "명석한",
-    "유익한",
-    "신선한",
-    "짜릿한",
-    "뛰어난",
-    "아기자기한",
-    "반짝이는",
-    "창조적인",
-    "침착한",
-    "성실한",
-    "의욕적인",
-    "악동같은",
-    "예술적인",
-    "경쾌한",
-    "노래하는",
-    "싱그러운",
-    "아주배고픈",
-    "어마어마한",
-    "파란",
-    "따스한",
-    "비행하는",
-    "투명한",
-    "신기한",
-    "놀라운",
-    "소중한",
-    "기다리는",
-    "외로운",
-    "빛나는",
-    "눈부신",
-    "따끔한",
-    "정교한",
-    "별빛나는",
-    "행복추구하는",
-    "애정하는",
-    "유순한",
-    "영원한",
-    "사랑스러운",
-    "원숭이같은",
-    "초록색",
-    "푸른",
-    "금빛",
-    "활발한",
-    "매혹적인",
-    "편안한",
-    "화려한",
-    "지혜로운",
-    "사랑받는",
-    "맛있는",
-    "다정다감한",
-    "존경스러운",
-    "묵직한",
-    "가벼운",
-    "밝은",
-    "젠틀한",
-    "정열적인",
-    "신비로운",
-    "무서운",
-    "예의바른",
-    "자상한",
-    "적극적인",
-    "마음씨좋은",
-    "사려깊은",
-    "참을성있는",
-    "자연스러운",
-    "애정어린",
-    "소박한",
-    "다채로운",
-    "탁월한",
-    "바람직한",
-    "유명한",
-    "헌신적인",
-    "신중한",
-    "진지한",
-    "무던한",
-    "평화로운",
-    "시원한",
-    "감동적인",
-    "고급스러운",
-    "훌륭한",
-    "상큼한",
-    "포근한",
-    "기뻐하는",
-    "당당한",
-    "쾌활한",
-    "기적적인",
-    "예리한",
-    "낭만적인",
-    "가뿐한",
-    "신나는",
-    "상쾌한",
-    "서툴른",
-    "잔잔한",
-    "이국적인",
-    "고요한",
-    "웅장한",
-  ];
-
-  const nouns = [
-    "파이터",
-    "아파치",
-    "눈코입",
-    "감자",
-    "돌멩이",
-    "요정",
-    "괴물",
-    "우주선",
-    "로봇",
-    "피자",
-    "치킨",
-    "용사",
-    "마법사",
-    "탐험가",
-    "도적",
-    "검사",
-    "무사",
-    "집사",
-    "흑마법사",
-    "정령",
-    "주술사",
-    "마녀",
-    "요술사",
-    "기사",
-    "장군",
-    "제왕",
-    "공주",
-    "왕자",
-    "마왕",
-    "달",
-    "영웅",
-    "천사",
-    "별똥별",
-    "유니콘",
-    "공룡",
-    "거미",
-    "날개",
-    "무지개",
-    "강철",
-    "용",
-    "헬멧",
-    "창",
-    "인어",
-    "소녀",
-    "왕비",
-    "곰",
-    "토끼",
-    "바다",
-    "하늘",
-    "바람",
-    "구름",
-    "태양",
-    "달빛",
-    "별빛",
-    "검",
-    "망치",
-    "방패",
-    "고리",
-    "왕관",
-    "마스크",
-    "햇빛",
-    "별",
-    "새벽",
-    "일출",
-    "일몰",
-    "강",
-    "산",
-    "들",
-    "숲",
-    "꽃",
-    "나무",
-    "물고기",
-    "새",
-    "뱀",
-    "거북이",
-    "나비",
-    "벌",
-    "고양이",
-    "개",
-    "소",
-    "말",
-    "원숭이",
-    "사자",
-    "호랑이",
-    "늑대",
-    "오리",
-    "펭귄",
-    "독수리",
-    "상어",
-    "돌고래",
-    "표범",
-    "기린",
-    "코끼리",
-    "물소",
-    "늙은이",
-    "아이",
-    "여자",
-    "남자",
-    "아빠",
-    "엄마",
-    "가족",
-    "친구",
-    "사람",
-    "학생",
-    "선생님",
-    "나라",
-    "도시",
-    "집",
-    "마을",
-    "차",
-    "비행기",
-    "선박",
-    "기차",
-    "자전거",
-    "시계",
-    "전화",
-    "컴퓨터",
-    "카메라",
-    "책",
-    "신문",
-    "볼펜",
-    "의자",
-    "선풍기",
-    "스피커",
-    "램프",
-    "책상",
-    "텔레비전",
-    "건축가",
-    "맹수",
-    "수학자",
-  ];
-
+  
   function generateFunnyNickname() {
     const randomAdjective =
       adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -410,6 +186,62 @@ router.post("/share", checkLogin, async (req, res) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: "서버 오류입니다.!!" });
+  }
+});
+
+// 공유글 상세 조회
+router.get("/share/:shareId", checkLogin, async (req, res) => {
+  try {
+    const { shareId } = req.params;
+    const { userId } = res.locals.user;
+    
+    // 먼저 Shares 테이블에서 게시글 작성자 확인
+    const share = await Shares.findOne({
+      where: { shareId },
+      attributes: ['UserId'],
+    });
+
+    // 게시글 작성자가 아닐 때만 조회수 업데이트
+    if (share.UserId !== userId) {
+      // 이미 조회한 적 있는지 확인
+      const viewed = await ViewCounts.findOne({ where: { ShareId: shareId, UserId: userId } });
+
+      // 사용자가 해당 게시글을 처음 조회하는 경우에만 조회수를 증가시킵니다.
+      if (!viewed) {
+        await ViewCounts.create({
+          UserId: userId,
+          ShareId: shareId
+        });
+      }
+    }
+
+    // 좋아요 수를 계산합니다.
+    const likesCount = await Likes.count({ where: { ShareId: shareId } });
+
+    // 업데이트된 조회수를 계산합니다.
+    const viewsCount = await ViewCounts.count({ where: { ShareId: shareId } });
+
+    const updatedShare = await Shares.findOne({
+      where: {
+        shareId: shareId,
+      },
+      include: [
+        {
+          model: Users,
+          attributes: ["nickname"],
+        },
+      ],
+    });
+    
+    // 좋아요 수와 조회수를 추가합니다.
+    updatedShare.setDataValue('likeCount', likesCount);
+    updatedShare.setDataValue('viewCount', viewsCount);
+    
+    const response = new ApiResponse(200, "공유글 상세 조회 성공", updatedShare);
+    return res.json(response);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: "서버 오류입니다." });
   }
 });
 

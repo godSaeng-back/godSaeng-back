@@ -1,43 +1,41 @@
 'use strict';
 const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Likes extends Model {
+  class ViewCounts extends Model {
     static associate(models) {
       this.belongsTo(models.Users, {
         foreignKey: 'UserId',
         targetKey: 'userId',
+        onDelete: 'CASCADE',
       });
       this.belongsTo(models.Shares, {
         foreignKey: 'ShareId',
         targetKey: 'shareId',
+        onDelete: 'CASCADE',
       });
     }
   }
-  Likes.init(
+  ViewCounts.init(
     {
-      likeId: {
+      viewId: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: DataTypes.INTEGER,
       },
       UserId: {
-        allowNull: false,
         type: DataTypes.INTEGER,
         references: {
           model: 'Users',
           key: 'userId',
         },
-        onDelete: 'CASCADE',
       },
       ShareId: {
-        allowNull: false,
         type: DataTypes.INTEGER,
         references: {
           model: 'Shares',
           key: 'shareId',
         },
-        onDelete: 'CASCADE',
       },
       createdAt: {
         allowNull: false,
@@ -52,8 +50,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: 'Likes',
+      modelName: 'ViewCounts',
+      timestamps: false,
     }
   );
-  return Likes;
+  return ViewCounts;
 };

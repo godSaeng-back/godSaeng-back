@@ -9,7 +9,7 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
   try {
     // 로그인한 사용자의 userId를 가져옵니다.
     const { userId } = res.locals.user;
-    
+
     // period 파라미터가 있으면 정수로 변환하고, 없으면 0을 기본값으로 사용합니다.
     // 이때 period가 1이면 이후 기간, -1이면 이전 기간을 나타냅니다.
     const period = req.params.period ? -parseInt(req.params.period, 10) : 0;
@@ -44,14 +44,10 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
       return res.status(400).json({ error: '타입은 week 혹은 month 입니다.' });
     }
 
-    // 해당 기간 동안의 피드를 모두 불러옵니다.
+    // 모든 피드를 불러옵니다.
     const allFeeds = await Feeds.findAll({
       where: {
         UserId: userId,
-        createdAt: {
-          [Op.gte]: startDate,
-          [Op.lt]: endDate,
-        },
       },
       include: [
         {
@@ -65,16 +61,21 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
     // 피드 통계를 계산합니다.
     const totalFeedDays = allFeeds.length;
     const totalPointScore = allFeeds.reduce((acc, feed) => {
-      const pointScore =
-        (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
+      const pointScore = (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
       return acc + pointScore;
     }, 0);
+
+    // 기간에 해당하는 피드를 필터링합니다.
+    const periodFeeds = allFeeds.filter((feed) => {
+      const createdAt = new Date(feed.createdAt);
+      return createdAt >= startDate && createdAt < endDate;
+    });
 
     let howEatScore = 0;
     let didGymScore = 0;
     let goodSleepScore = 0;
 
-    allFeeds.forEach((feed) => {
+    periodFeeds.forEach((feed) => {
       if (feed.howEat) {
         howEatScore++;
       }

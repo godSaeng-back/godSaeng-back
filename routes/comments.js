@@ -1,0 +1,99 @@
+const express = require('express');
+const router = express.Router();
+const checkLogin = require('../middlewares/checkLogin.js');
+const { Shares, Users, Comment } = require('../models');
+const adjectives = require('./adjectives');
+const nouns = require('./nouns');
+
+// 댓글 목록 조회
+router.get('/comment/:shareId', async (req, res) => {
+  const { shareId } = req.params;
+
+  const share = await Shares.findOne({
+    where: { shareId: shareId },
+  });
+
+  // 게시글이 존재하는지 확인
+  if (!share) {
+    return res.status(404).json({
+      message: '존재하지 않는 게시글입니다.',
+    });
+  }
+
+  try {
+    const comments = await Comment.findAll({
+      where: { shareId: shareId },
+      include: [
+        {
+          model: Users,
+          attributes: ['userId', 'nickname'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.status(200).json({
+      message: '댓글 목록 조회 성공',
+      data: comments,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: '댓글 목록 조회 실패',
+      error: error.message,
+    });
+  }
+});
+
+// 댓글 작성
+router.post('/comment/:shareId', checkLogin, async (req, res) => {
+  const { userId } = res.locals.user;
+  const { shareId } = req.params;
+  const { content } = req.body;
+
+  const share = await Shares.findOne({
+    where: { shareId: shareId },
+  });
+
+  // 게시글이 존재하는지 확인
+  if (!share) {
+    return res.status(404).json({
+      message: '존재하지 않는 게시글입니다.',
+    });
+  }
+
+  function generateFunnyNickname() {
+    const randomAdjective =
+      adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+
+    return randomAdjective + ' ' + randomNoun;
+  }
+  const randomNickname = generateFunnyNickname();
+
+  try {
+    // 공유글을 작성한 사용자가 댓글을 작성하는 경우, 공유글 작성 시 사용한 닉네임을 사용하고
+    // 그 외의 경우에는 임의의 닉네임을 사용
+    const commentName = share.UserId === userId ? share.shareName : randomNickname;
+
+    const comment = await Comment.create({
+      UserId: userId,
+      ShareId: shareId,
+      commentName: commentName,
+      content: content,
+    });
+
+    res.status(200).json({
+      message: '댓글 작성 성공',
+      data: comment,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: '댓글 작성 실패',
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

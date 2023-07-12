@@ -60,33 +60,6 @@ router.get('/mypage', checkLogin, async (req, res) => {
     });
 
     // 사용자의 전체 피드 가져오기
-    // const allFeeds = await Feeds.findAll({
-    //   where: {
-    //     UserId: userId,
-    //   },
-    //   include: [
-    //     {
-    //       model: FeedImages,
-    //       attributes: ['imageId', 'FeedId', 'imagePath'],
-    //     },
-    //   ],
-    //   attributes: [
-    //     'feedId',
-    //     'UserId',
-    //     'emotion',
-    //     'howEat',
-    //     'didGym',
-    //     'goodSleep',
-    //     'didShare',
-    //     'createdAt',
-    //     'updatedAt',
-    //   ],
-    // });
-
-    // // 공유한 피드 필터링
-    // const sharedFeeds = allFeeds.filter((feed) => feed.didShare);
-
-    // 사용자의 전체 피드 가져오기
     const allFeeds = await Feeds.findAll({
       where: {
         UserId: userId,

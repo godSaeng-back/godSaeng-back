@@ -1,15 +1,15 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const multer = require("multer");
-const multerS3 = require("multer-s3");
-const aws = require("aws-sdk");
-const path = require("path");
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const aws = require('aws-sdk');
+const path = require('path');
 // const Sequelize = require('sequelize');
-const checkLogin = require("../middlewares/checkLogin.js"); //유저아이디받기
-const { Feeds, Users, FeedImages } = require("../models");
-const { Op, Sequelize } = require("sequelize");
+const checkLogin = require('../middlewares/checkLogin.js'); //유저아이디받기
+const { Feeds, Users, FeedImages } = require('../models');
+const { Op, Sequelize } = require('sequelize');
 
-require("dotenv").config();
+require('dotenv').config();
 
 aws.config.update({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -24,7 +24,7 @@ const upload = multer({
   storage: multerS3({
     s3: s3,
     bucket: process.env.AWS_BUCKET_NAME,
-    acl: "public-read",
+    acl: 'public-read',
     key: function (req, file, cb) {
       cb(null, Date.now().toString() + path.basename(file.originalname));
     },
@@ -34,7 +34,7 @@ const upload = multer({
 
 // 응답 객체
 class ApiResponse {
-  constructor(code, message = "", data = {}) {
+  constructor(code, message = '', data = {}) {
     this.code = code;
     this.message = message;
     this.data = data;
@@ -42,7 +42,7 @@ class ApiResponse {
 }
 
 // ◎  메인페이지 조회
-router.get("/main", checkLogin, async (req, res) => {
+router.get('/main', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
   const hours = 1 * 60 * 60 * 1000;
 
@@ -63,8 +63,8 @@ router.get("/main", checkLogin, async (req, res) => {
       // 각 날짜의 최신 피드의 createdAt 얻기
       const feedDates = await Feeds.findAll({
         attributes: [
-          [Sequelize.fn("date", Sequelize.col("createdAt")), "date"],
-          [Sequelize.fn("max", Sequelize.col("createdAt")), "latestCreatedAt"],
+          [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
+          [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt'],
         ],
         where: {
           UserId: userId,
@@ -73,7 +73,7 @@ router.get("/main", checkLogin, async (req, res) => {
             [Op.lte]: endDate,
           },
         },
-        group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
+        group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
       });
       // 각 날짜의 최신 피드 조회
       const feeds = await Promise.all(
@@ -81,13 +81,13 @@ router.get("/main", checkLogin, async (req, res) => {
           return await Feeds.findOne({
             where: {
               UserId: userId,
-              createdAt: feedDate.getDataValue("latestCreatedAt"),
+              createdAt: feedDate.getDataValue('latestCreatedAt'),
             },
             include: [
               {
                 model: FeedImages, // FeedImages 모델 추가
-                as: "FeedImages", // alias 설정
-                attributes: ["imageId", "imagePath"], // 가져올 필드 설정
+                as: 'FeedImages', // alias 설정
+                attributes: ['imageId', 'imagePath'], // 가져올 필드 설정
               },
             ],
           });
@@ -98,7 +98,7 @@ router.get("/main", checkLogin, async (req, res) => {
       return res.status(200).json({ feeds });
     } catch (err) {
       console.log(err);
-      return res.status(500).json({ error: "서버 오류입니다" });
+      return res.status(500).json({ error: '서버 오류입니다' });
     }
   } else {
     return res.json({ user: null, feeds: [] });
@@ -106,7 +106,7 @@ router.get("/main", checkLogin, async (req, res) => {
 });
 
 // ◎  메인페이지 월전환
-router.get("/main/:month", checkLogin, async (req, res) => {
+router.get('/main/:month', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
   const { month } = req.params;
   console.log(month);
@@ -124,8 +124,8 @@ router.get("/main/:month", checkLogin, async (req, res) => {
       // 각 날짜의 최신 피드의 createdAt 얻기
       const feedDates = await Feeds.findAll({
         attributes: [
-          [Sequelize.fn("date", Sequelize.col("createdAt")), "date"],
-          [Sequelize.fn("max", Sequelize.col("createdAt")), "latestCreatedAt"],
+          [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
+          [Sequelize.fn('max', Sequelize.col('createdAt')), 'latestCreatedAt'],
         ],
         where: {
           UserId: userId,
@@ -134,7 +134,7 @@ router.get("/main/:month", checkLogin, async (req, res) => {
             [Op.lte]: endDate,
           },
         },
-        group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
+        group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
       });
       // 각 날짜의 최신 피드 조회
       const feeds = await Promise.all(
@@ -142,13 +142,13 @@ router.get("/main/:month", checkLogin, async (req, res) => {
           return await Feeds.findOne({
             where: {
               UserId: userId,
-              createdAt: feedDate.getDataValue("latestCreatedAt"),
+              createdAt: feedDate.getDataValue('latestCreatedAt'),
             },
             include: [
               {
                 model: FeedImages, // FeedImages 모델 추가
-                as: "FeedImages", // alias 설정
-                attributes: ["imageId", "imagePath"], // 가져올 필드 설정
+                as: 'FeedImages', // alias 설정
+                attributes: ['imageId', 'imagePath'], // 가져올 필드 설정
               },
             ],
           });
@@ -159,7 +159,7 @@ router.get("/main/:month", checkLogin, async (req, res) => {
       return res.status(200).json({ feeds });
     } catch (err) {
       console.log(err);
-      return res.status(500).json({ error: "서버 오류입니다" });
+      return res.status(500).json({ error: '서버 오류입니다' });
     }
   } else {
     return res.json({ user: null, feeds: [] });
@@ -167,9 +167,9 @@ router.get("/main/:month", checkLogin, async (req, res) => {
 });
 
 // ◎ GET / (식단사진 전체 조회)
-router.get("/allmeal", checkLogin, async (req, res) => {
+router.get('/allmeal', checkLogin, async (req, res) => {
   const { user } = res.locals;
-  console.log("user : ", user);
+  console.log('user : ', user);
   if (user) {
     try {
       const feeds = await Feeds.findAll({
@@ -177,16 +177,16 @@ router.get("/allmeal", checkLogin, async (req, res) => {
         include: [
           {
             model: FeedImages,
-            as: "FeedImages",
-            attributes: ["imageId", "FeedId", "imagePath"],
+            as: 'FeedImages',
+            attributes: ['imageId', 'FeedId', 'imagePath'],
           },
         ],
-        order: [["createdAt", "DESC"]],
+        order: [['createdAt', 'DESC']],
       });
       return res.json({ feeds });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: "서버 오류입니다." });
+      return res.status(500).json({ error: '서버 오류입니다.' });
     }
   } else {
     return res.json({ feeds: [] });
@@ -195,8 +195,8 @@ router.get("/allmeal", checkLogin, async (req, res) => {
 
 //  ◎ POST /feed/write (피드 작성)
 router.post(
-  "/feed/write",
-  upload.array("images", 5),
+  '/feed/write',
+  upload.array('images', 5),
 
   checkLogin,
   async (req, res) => {
@@ -212,79 +212,120 @@ router.post(
       didGym === undefined ||
       goodSleep === undefined
     ) {
-      return res.status(400).json({ error: "모든 항목을 입력해주세요." });
+      return res.status(400).json({ error: '모든 항목을 입력해주세요.' });
     }
 
-    // try {
-    const date = new Date();
-    const startDate = new Date( // 오늘의 날짜 00:00:00 ~
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
-    const endDate = new Date( // 오늘의 날짜 ~ 23:59:59
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate() + 1
-    );
+    try {
+      const date = new Date();
+      const startDate = new Date( // 오늘의 날짜 00:00:00 ~
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+      const endDate = new Date( // 오늘의 날짜 ~ 23:59:59
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate() + 1
+      );
 
-    // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
-    const existingFeedCount = await Feeds.count({
-      where: {
-        UserId: userId,
-        createdAt: {
-          [Op.gte]: startDate,
-          [Op.lt]: endDate,
+      // 같은 날짜에 이미 작성한 피드가 있는지 확인합니다.
+      const existingFeedCount = await Feeds.count({
+        where: {
+          UserId: userId,
+          createdAt: {
+            [Op.gte]: startDate,
+            [Op.lt]: endDate,
+          },
         },
-      },
-    });
+      });
 
-    // if (existingFeedCount > 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ error: "오늘은 이미 피드를 작성하셨습니다." });
-    // }
-    // if (existingFeedCount > 0) {
-    //   return res.status(400).json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
-    // }
-
-    // 피드를 생성합니다.
-    const feed = await Feeds.create({
-      UserId: userId,
-      emotion,
-      howEat,
-      didGym,
-      goodSleep,
-      didShare,
-    });
-
-    // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
-    const imagePaths = [];
-    if (images && images.length > 0) {
-      for (const image of images) {
-        const feedImage = await FeedImages.create({
-          userId: userId,
-          FeedId: feed.feedId,
-          imagePath: image.location, // 이미지 경로를 S3 URL로 설정
-        });
-        imagePaths.push(feedImage.imagePath);
+      if (existingFeedCount > 0) {
+        return res
+          .status(400)
+          .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
       }
-    }
+      if (existingFeedCount > 0) {
+        return res
+          .status(400)
+          .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
+      }
 
-    return res.json({
-      feed,
-      imagePaths,
-      message: "피드 작성이 완료되었습니다.",
-    });
-    // } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "서버 오류입니다." });
-    // }
+      // 피드를 생성합니다.
+      // const feed = await Feeds.create({
+      //   UserId: userId,
+      //   emotion,
+      //   howEat,
+      //   didGym,
+      //   goodSleep,
+      //   didShare,
+      // });
+
+      // // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
+      // const imagePaths = [];
+      // if (images && images.length > 0) {
+      //   for (const image of images) {
+      //     const feedImage = await FeedImages.create({
+      //       userId: userId,
+      //       FeedId: feed.feedId,
+      //       imagePath: image.location, // 이미지 경로를 S3 URL로 설정
+      //     });
+      //     imagePaths.push(feedImage.imagePath);
+      //   }
+      // }
+
+      // return res.json({
+      //   feed,
+      //   imagePaths,
+      //   message: '피드 작성이 완료되었습니다.',
+      // });
+
+      // 피드를 생성합니다.
+      const feed = await Feeds.create({
+        UserId: userId,
+        emotion,
+        howEat,
+        didGym,
+        goodSleep,
+        didShare,
+      });
+
+      // 감정에 대해 3점 부여
+      let pointScore = emotion ? 3 : 0;
+
+      // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
+      const imagePaths = [];
+      if (images && images.length > 0) {
+        for (const image of images) {
+          const feedImage = await FeedImages.create({
+            userId: userId,
+            FeedId: feed.feedId,
+            imagePath: image.location, // 이미지 경로를 S3 URL로 설정
+          });
+          imagePaths.push(feedImage.imagePath);
+        }
+
+        // 이미지가 있는 경우 추가 2점 부여
+        pointScore += 2;
+      }
+
+      // 해당 유저의 totalPointScore에 점수 추가
+      const user = await Users.findByPk(userId);
+      await user.increment('totalPointScore', { by: pointScore });
+
+      return res.json({
+        feed,
+        imagePaths,
+        message: '피드 작성이 완료되었습니다.',
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: '서버 오류입니다.' });
+    }
   }
 );
 
 // ◎ GET /feed/:feedId (피드 상세 조회)
-router.get("/feed/:feedId", checkLogin, async (req, res) => {
+router.get('/feed/:feedId', checkLogin, async (req, res) => {
   const { feedId } = req.params;
 
   try {
@@ -294,39 +335,39 @@ router.get("/feed/:feedId", checkLogin, async (req, res) => {
         // 피드 작성자 정보를 가져옵니다.
         {
           model: Users,
-          as: "User",
+          as: 'User',
           attributes: [
-            "userId",
-            "email",
-            "profileImage",
-            "nickname",
-            "createdAt",
-            "updatedAt",
+            'userId',
+            'email',
+            'profileImage',
+            'nickname',
+            'createdAt',
+            'updatedAt',
           ],
         },
         {
           model: FeedImages, // FeedImages 정보를 가져옵니다.
-          as: "FeedImages",
-          attributes: ["imageId", "FeedId", "imagePath"],
+          as: 'FeedImages',
+          attributes: ['imageId', 'FeedId', 'imagePath'],
         },
       ],
     });
 
     if (!feed) {
-      return res.status(400).json({ error: "해당하는 피드가 없습니다." });
+      return res.status(400).json({ error: '해당하는 피드가 없습니다.' });
     }
 
     return res.json({ feed });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "서버 오류입니다." });
+    return res.status(500).json({ error: '서버 오류입니다.' });
   }
 });
 
 // ◎ PUT /feed/:feedId (피드 수정)
 router.put(
-  "/feed/:feedId",
-  upload.array("images"),
+  '/feed/:feedId',
+  upload.array('images'),
   checkLogin,
   async (req, res) => {
     const { feedId } = req.params;
@@ -341,7 +382,7 @@ router.put(
       didGym === undefined ||
       goodSleep === undefined
     ) {
-      return res.status(400).json({ error: "모든 항목을 입력해주세요." });
+      return res.status(400).json({ error: '모든 항목을 입력해주세요.' });
     }
 
     try {
@@ -351,7 +392,7 @@ router.put(
       if (!feed) {
         return res
           .status(403)
-          .json({ error: "해당 피드를 수정할 권한이 없습니다." });
+          .json({ error: '해당 피드를 수정할 권한이 없습니다.' });
       }
 
       // 피드 수정
@@ -383,12 +424,11 @@ router.put(
       if (currentImages.length + images.length > 5) {
         return res
           .status(400)
-          .json({ error: "이미지는 최대 5개까지만 업로드 가능합니다." });
+          .json({ error: '이미지는 최대 5개까지만 업로드 가능합니다.' });
       }
 
       // 새 이미지 업로드
       if (images && images.length > 0) {
-
         // imagePaths 초기화
         let imagePaths = [];
 
@@ -403,16 +443,16 @@ router.put(
         }
       }
 
-      res.json({ message: "피드 수정이 완료되었습니다." });
+      res.json({ message: '피드 수정이 완료되었습니다.' });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: "피드 수정에 실패했습니다." });
+      return res.status(500).json({ error: '피드 수정에 실패했습니다.' });
     }
   }
 );
 
 // ◎ DELETE /feed/:feedId (피드 삭제)
-router.delete("/feed/:feedId", checkLogin, async (req, res) => {
+router.delete('/feed/:feedId', checkLogin, async (req, res) => {
   const { feedId } = req.params;
   const { userId } = res.locals.user;
 
@@ -423,21 +463,21 @@ router.delete("/feed/:feedId", checkLogin, async (req, res) => {
     if (!feed) {
       return res
         .status(403)
-        .json({ error: "해당 피드를 삭제할 권한이 없습니다." });
+        .json({ error: '해당 피드를 삭제할 권한이 없습니다.' });
     }
 
     // 피드 삭제
     await Feeds.destroy({ where: { feedId } });
 
-    res.json({ message: "피드 삭제가 완료되었습니다." });
+    res.json({ message: '피드 삭제가 완료되었습니다.' });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "피드 삭제에 실패했습니다." });
+    return res.status(500).json({ error: '피드 삭제에 실패했습니다.' });
   }
 });
 
 // DELETE /feed/image/:imageId (피드 이미지 삭제)
-router.delete("/feed/image/:imageId", checkLogin, async (req, res) => {
+router.delete('/feed/image/:imageId', checkLogin, async (req, res) => {
   const { imageId } = req.params;
   const { userId } = res.locals.user;
 
@@ -448,8 +488,8 @@ router.delete("/feed/image/:imageId", checkLogin, async (req, res) => {
       include: [
         {
           model: Feeds,
-          as: "Feed",
-          attributes: ["feedId", "UserId"],
+          as: 'Feed',
+          attributes: ['feedId', 'UserId'],
         },
       ],
     });
@@ -457,32 +497,32 @@ router.delete("/feed/image/:imageId", checkLogin, async (req, res) => {
     if (feedImage.Feed.UserId !== userId) {
       return res
         .status(403)
-        .json({ error: "해당 피드의 이미지를 삭제할 권한이 없습니다." });
+        .json({ error: '해당 피드의 이미지를 삭제할 권한이 없습니다.' });
     }
 
     // 피드 이미지 삭제
     await FeedImages.destroy({ where: { imageId } });
 
-    res.json({ message: "피드 이미지 삭제가 완료되었습니다." });
+    res.json({ message: '피드 이미지 삭제가 완료되었습니다.' });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "피드 이미지 삭제에 실패했습니다." });
+    return res.status(500).json({ error: '피드 이미지 삭제에 실패했습니다.' });
   }
 });
 
 // ◎ GET /feed/least (최근 피드 사진 조회)
-router.get("/image/latest", checkLogin, async (req, res) => {
+router.get('/image/latest', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
 
   try {
     const feedImages = await FeedImages.findAll({
       limit: 3, // 최근 3개의 피드 사진만 조회
-      order: [["createdAt", "DESC"]],
+      order: [['createdAt', 'DESC']],
       include: [
         {
           model: Feeds,
-          as: "Feed",
-          attributes: ["feedId", "UserId"],
+          as: 'Feed',
+          attributes: ['feedId', 'UserId'],
           where: { UserId: userId },
           required: true,
         },
@@ -490,18 +530,18 @@ router.get("/image/latest", checkLogin, async (req, res) => {
     });
 
     if (feedImages.length === 0) {
-      return res.status(400).json({ error: "최근 피드 사진이 없습니다." });
+      return res.status(400).json({ error: '최근 피드 사진이 없습니다.' });
     }
 
     return res.json({ feedImages });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "서버 오류입니다." });
+    return res.status(500).json({ error: '서버 오류입니다.' });
   }
 });
 
 // DELETE /feed/:feedId/allImage (특정 피드의 이미지 전체 삭제)
-router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
+router.delete('/feed/:feedId/allImage', checkLogin, async (req, res) => {
   const { userId } = res.locals.user;
   const { feedId } = req.params; // 피드 ID를 URL에서 가져옵니다.
 
@@ -511,11 +551,11 @@ router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
       include: [
         {
           model: Feeds,
-          as: "Feed",
-          attributes: ["feedId", "UserId"],
-          where: { 
-            feedId: feedId,  // 피드 ID를 이용해서 검색합니다.
-            UserId: userId 
+          as: 'Feed',
+          attributes: ['feedId', 'UserId'],
+          where: {
+            feedId: feedId, // 피드 ID를 이용해서 검색합니다.
+            UserId: userId,
           },
           required: true,
         },
@@ -523,20 +563,24 @@ router.delete("/feed/:feedId/allImage", checkLogin, async (req, res) => {
     });
 
     if (feedImages.length === 0) {
-      return res.status(403).json({ error: "해당 이미지 삭제 권한이 없습니다." });
+      return res
+        .status(403)
+        .json({ error: '해당 이미지 삭제 권한이 없습니다.' });
     }
 
     // 피드 이미지 삭제
     await FeedImages.destroy({
       where: {
-        FeedId: feedId,  // 피드 ID를 이용해서 이미지를 삭제합니다.
+        FeedId: feedId, // 피드 ID를 이용해서 이미지를 삭제합니다.
       },
     });
 
-    res.json({ message: "피드 이미지 전체 삭제가 완료되었습니다." });
+    res.json({ message: '피드 이미지 전체 삭제가 완료되었습니다.' });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "피드 이미지 전체 삭제에 실패했습니다." });
+    return res
+      .status(500)
+      .json({ error: '피드 이미지 전체 삭제에 실패했습니다.' });
   }
 });
 

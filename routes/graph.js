@@ -10,6 +10,14 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
     // 로그인한 사용자의 userId를 가져옵니다.
     const { userId } = res.locals.user;
 
+    // userId로 사용자를 조회합니다.
+    const user = await Users.findOne({
+      where: { userId },
+    });
+
+    // user의 totalPoint를 가져옵니다.
+    const totalPointScore  = user.totalPointScore;
+
     // period 파라미터가 있으면 정수로 변환하고, 없으면 0을 기본값으로 사용합니다.
     // 이때 period가 1이면 이후 기간, -1이면 이전 기간을 나타냅니다.
     const period = req.params.period ? -parseInt(req.params.period, 10) : 0;
@@ -60,10 +68,10 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
 
     // 피드 통계를 계산합니다.
     const totalFeedDays = allFeeds.length;
-    const totalPointScore = allFeeds.reduce((acc, feed) => {
-      const pointScore = (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
-      return acc + pointScore;
-    }, 0);
+    // const totalPointScore = allFeeds.reduce((acc, feed) => {
+    //   const pointScore = (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
+    //   return acc + pointScore;
+    // }, 0);
 
     // 기간에 해당하는 피드를 필터링합니다.
     const periodFeeds = allFeeds.filter((feed) => {

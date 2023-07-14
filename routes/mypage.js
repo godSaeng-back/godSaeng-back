@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const checkLogin = require('../middlewares/checkLogin.js');
-const { Users, Feeds, Likes, Shares, FeedImages } = require('../models');
+const { Users, Feeds, Likes, Shares, FeedImages, Sequelize } = require('../models');
 const XRegExp = require('xregexp');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -54,32 +54,9 @@ router.get('/mypage', checkLogin, async (req, res) => {
         'email',
         'profileImage',
         'nickname',
-        'createdAt',
-        'updatedAt',
+        'totalPointScore',
       ],
     });
-
-    // 사용자의 전체 피드 가져오기
-    const allFeeds = await Feeds.findAll({
-      where: {
-        UserId: userId,
-      },
-      include: [
-        {
-          model: FeedImages,
-          attributes: ['imageId', 'FeedId', 'imagePath'],
-        },
-      ],
-      attributes: ['feedId', 'emotion'],
-    });
-
-    // 전체 피드 중 이미지가 있거나 감정이 있는 피드에 대한 총 점수 계산
-    const totalPointScore = allFeeds.reduce((acc, feed) => {
-      // FeedImages와 emotion에 대해 점수 부여해서 전체 피드에 대한 점수 총합 계산
-      const pointScore =
-        (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
-      return acc + pointScore;
-    }, 0);
 
     // 사용자가 작성한 모든 Shares 가져오기
     const sharedShares = await Shares.findAll({
@@ -97,7 +74,7 @@ router.get('/mypage', checkLogin, async (req, res) => {
       ],
     });
 
-    // 사용자가 좋아요를 누른 게시물 가져오기
+    // // 사용자가 좋아요를 누른 게시물 가져오기
     const likedShares = await Likes.findAll({
       where: {
         UserId: userId,
@@ -114,16 +91,20 @@ router.get('/mypage', checkLogin, async (req, res) => {
             'createdAt',
             'updatedAt',
           ],
+          include: [
+            {
+              model: Users,
+              attributes: ['userId', 'nickname', 'profileImage', 'totalPointScore'],
+            },
+          ],
         },
       ],
     });
 
     return res.status(200).json({
       user: user,
-      // sharedFeeds: sharedFeeds,
       sharedShares: sharedShares,
       likedShares: likedShares,
-      totalPointScore: totalPointScore,
     });
   } catch (err) {
     console.error(err);

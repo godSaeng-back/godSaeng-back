@@ -9,6 +9,12 @@ const nouns = require('./nouns');
 router.get('/comment/:shareId', async (req, res) => {
   const { shareId } = req.params;
 
+  // 한 페이지에 보여줄 항목의 수
+  const limit = 10;
+
+  // 페이지 번호
+  const page = req.query.page ? Number(req.query.page) : 1;
+
   const share = await Shares.findOne({
     where: { shareId: shareId },
   });
@@ -26,10 +32,12 @@ router.get('/comment/:shareId', async (req, res) => {
       include: [
         {
           model: Users,
-          attributes: ['userId', 'nickname'],
+          attributes: ['profileImage', 'totalPointScore'],
         },
       ],
       order: [['createdAt', 'DESC']],
+      offset: (page - 1) * limit,
+      limit: limit,
     });
 
     res.status(200).json({
@@ -44,6 +52,7 @@ router.get('/comment/:shareId', async (req, res) => {
     });
   }
 });
+
 
 // 댓글 작성
 router.post('/comment/:shareId', checkLogin, async (req, res) => {

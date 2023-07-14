@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false, // NOT NULL
         type: DataTypes.STRING,
       },
+      totalPointScore: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
       authCode: {
         allowNull: true,
         type: DataTypes.STRING,

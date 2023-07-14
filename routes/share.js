@@ -106,28 +106,6 @@ const imageUpload = async (base64) => {
   return location;
 };
 
-// 사용자의 전체 피드를 가져와 점수를 계산하는 함수
-const calculateTotalPointScore = async (userId) => {
-  // 사용자의 전체 피드 가져오기
-  const allFeeds = await Feeds.findAll({
-    where: { UserId: userId },
-    include: [
-      { model: FeedImages, attributes: ['imageId', 'FeedId', 'imagePath'] },
-    ],
-    attributes: ['feedId', 'emotion'],
-  });
-
-  // 전체 피드 중 이미지가 있거나 감정이 있는 피드에 대한 총 점수 계산
-  const totalPointScore = allFeeds.reduce((acc, feed) => {
-    // FeedImages와 emotion에 대해 점수 부여해서 전체 피드에 대한 점수 총합 계산
-    const pointScore =
-      (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
-    return acc + pointScore;
-  }, 0);
-
-  return totalPointScore;
-};
-
 // 공유글 목록 전체 조회 (무한 스크롤)
 router.get('/share/list', async (req, res) => {
   // 한 페이지에 보여줄 항목의 수
@@ -142,7 +120,7 @@ router.get('/share/list', async (req, res) => {
       include: [
         {
           model: Users,
-          attributes: ['nickname'],
+          attributes: ['nickname', 'profileImage', 'totalPointScore'],
         },
       ],
       offset: (page - 1) * limit,
@@ -160,11 +138,6 @@ router.get('/share/list', async (req, res) => {
 
       share.setDataValue('likeCount', likesCount);
       share.setDataValue('viewCount', viewsCount);
-      // 각 공유글에 피드 점수를 추가합니다.
-      share.setDataValue(
-        'totalPointScore',
-        await calculateTotalPointScore(share.UserId)
-      );
     }
 
     const response = new ApiResponse(200, '공유글 목록 조회 성공', shares);
@@ -234,8 +207,14 @@ router.get('/share/:shareId', checkLogin, async (req, res) => {
 
     // 먼저 Shares 테이블에서 게시글 작성자 확인
     const share = await Shares.findOne({
-      where: { shareId },
-      attributes: ['UserId'],
+      where: { shareId }, 
+      attributes: ['shareId','UserId', 'title', 'content', 'shareName', 'imagePath', 'anonymous', 'createdAt', 'updatedAt'], 
+      include: [
+        {
+          model: Users,   // 게시글 작성자 정보
+          attributes: ['nickname', 'profileImage', 'totalPointScore'],
+        },
+      ],
     });
 
     // 게시글 작성자가 아닐 때만 조회수 업데이트
@@ -260,28 +239,18 @@ router.get('/share/:shareId', checkLogin, async (req, res) => {
     // 업데이트된 조회수를 계산합니다.
     const viewsCount = await ViewCounts.count({ where: { ShareId: shareId } });
 
-    const updatedShare = await Shares.findOne({
-      where: {
-        shareId: shareId,
-      },
-      include: [
-        {
-          model: Users,
-          attributes: ['nickname'],
-        },
-      ],
+    // 좋아요를 누른 사용자 목록을 가져옵니다.
+    const likers = await Likes.findOne({
+      where: { UserId: userId, ShareId: shareId },
+      attributes: ['UserId'],
     });
 
     // 좋아요 수와 조회수를 추가합니다.
-    updatedShare.setDataValue('likeCount', likesCount);
-    updatedShare.setDataValue('viewCount', viewsCount);
-    updatedShare.setDataValue('totalPointScore', await calculateTotalPointScore(updatedShare.UserId));
+    share.setDataValue('likeCount', likesCount);
+    share.setDataValue('viewCount', viewsCount);
+    share.setDataValue('likers', likers);
 
-    const response = new ApiResponse(
-      200,
-      '공유글 상세 조회 성공',
-      updatedShare
-    );
+    const response = new ApiResponse(200, '공유글 상세 조회 성공', share);
     return res.json(response);
   } catch (err) {
     console.log(err);

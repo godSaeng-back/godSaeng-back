@@ -7,7 +7,7 @@ const path = require('path');
 const checkLogin = require('../middlewares/checkLogin.js');
 const jwt = require('jsonwebtoken');
 const jwtSecret = "checkLogin_key";
-const { Shares, Users, Likes } = require('../models');
+const { Shares, Users, Likes, Comment } = require('../models');
 const adjectives = require('./adjectives');
 const nouns = require('./nouns');
 
@@ -129,7 +129,12 @@ router.get('/share/list', async (req, res) => {
         where: { ShareId: share.shareId },
       });
 
+      const commentCount = await Comment.count({
+        where: { ShareId: share.shareId },
+      });
+
       share.setDataValue('likeCount', likesCount);
+      share.setDataValue('commentCount', commentCount);
     }
 
     const response = new ApiResponse(200, '공유글 목록 조회 성공', shares);
@@ -228,13 +233,16 @@ router.get('/share/:shareId', async (req, res) => {
 
     // 좋아요 수를 계산합니다.
     const likesCount = await Likes.count({ where: { ShareId: shareId } });
+    
+    // 댓글의 수를 계산합니다.
+    const commentsCount = await Comment.count({ where: { ShareId: shareId } });
 
     // 로그인한 사용자가 있다면, 좋아요를 누른 사용자 목록을 가져옵니다.
     let likers = null;
     if (userId) {
       likers = await Likes.findOne({
         where: { UserId: userId, ShareId: shareId },
-        attributes: [],
+        attributes: ['likeId'],
         include: [
           {
             model: Users,
@@ -248,6 +256,7 @@ router.get('/share/:shareId', async (req, res) => {
 
     // 좋아요 수 추가합니다.
     share.setDataValue('likeCount', likesCount);
+    share.setDataValue('commentCount', commentsCount);
     share.setDataValue('likers', likers);
 
     const response = new ApiResponse(200, '공유글 상세 조회 성공', share);

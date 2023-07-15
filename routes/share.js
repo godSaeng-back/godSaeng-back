@@ -203,9 +203,14 @@ router.post('/share', checkLogin, async (req, res) => {
 router.get('/share/:shareId', async (req, res) => {
   try {
     const { shareId } = req.params;
-    const { userId } = res.locals.user;
+    let userId = null;
 
-    // 먼저 Shares 테이블에서 게시글 작성자 확인
+    // 로그인한 사용자가 있다면 userId 추출
+    if (res.locals.user) {
+      userId = res.locals.user.userId;
+    }
+
+    // Shares 테이블에서 게시글 가져오기
     const share = await Shares.findOne({
       where: { shareId }, 
       attributes: ['shareId','UserId', 'title', 'content', 'shareName', 'imagePath', 'anonymous', 'createdAt', 'updatedAt'], 
@@ -217,8 +222,8 @@ router.get('/share/:shareId', async (req, res) => {
       ],
     });
 
-    // 게시글 작성자가 아닐 때만 조회수 업데이트
-    if (share.UserId !== userId) {
+    // 로그인한 사용자가 있고, 게시글 작성자가 아닐 때만 조회수 업데이트
+    if (userId && share.UserId !== userId) {
       // 이미 조회한 적 있는지 확인
       const viewed = await ViewCounts.findOne({
         where: { ShareId: shareId, UserId: userId },
@@ -239,11 +244,14 @@ router.get('/share/:shareId', async (req, res) => {
     // 업데이트된 조회수를 계산합니다.
     const viewsCount = await ViewCounts.count({ where: { ShareId: shareId } });
 
-    // 좋아요를 누른 사용자 목록을 가져옵니다.
-    const likers = await Likes.findOne({
-      where: { UserId: userId, ShareId: shareId },
-      attributes: ['UserId'],
-    });
+    // 로그인한 사용자가 있다면, 좋아요를 누른 사용자 목록을 가져옵니다.
+    let likers = null;
+    if (userId) {
+      likers = await Likes.findOne({
+        where: { UserId: userId, ShareId: shareId },
+        attributes: ['UserId'],
+      });
+    }
 
     // 좋아요 수와 조회수를 추가합니다.
     share.setDataValue('likeCount', likesCount);
@@ -257,5 +265,6 @@ router.get('/share/:shareId', async (req, res) => {
     return res.status(500).json({ error: '서버 오류입니다.' });
   }
 });
+
 
 module.exports = router;

@@ -12,11 +12,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'ShareId',
         sourceKey: 'shareId',
       });
-
-      this.hasMany(models.ViewCounts, {
-        foreignKey: 'ShareId',
-        sourceKey: 'shareId',
-      });
     }
   }
   Shares.init(
@@ -54,6 +49,9 @@ module.exports = (sequelize, DataTypes) => {
       },
       anonymous: {
         type: DataTypes.BOOLEAN,
+      },
+      viewCount: {
+        type: DataTypes.INTEGER,
       },
       createdAt: {
         allowNull: false,

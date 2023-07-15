@@ -244,40 +244,6 @@ router.post(
           .status(400)
           .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
       }
-      if (existingFeedCount > 0) {
-        return res
-          .status(400)
-          .json({ error: '오늘은 이미 피드를 작성하셨습니다.' });
-      }
-
-      // 피드를 생성합니다.
-      // const feed = await Feeds.create({
-      //   UserId: userId,
-      //   emotion,
-      //   howEat,
-      //   didGym,
-      //   goodSleep,
-      //   didShare,
-      // });
-
-      // // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
-      // const imagePaths = [];
-      // if (images && images.length > 0) {
-      //   for (const image of images) {
-      //     const feedImage = await FeedImages.create({
-      //       userId: userId,
-      //       FeedId: feed.feedId,
-      //       imagePath: image.location, // 이미지 경로를 S3 URL로 설정
-      //     });
-      //     imagePaths.push(feedImage.imagePath);
-      //   }
-      // }
-
-      // return res.json({
-      //   feed,
-      //   imagePaths,
-      //   message: '피드 작성이 완료되었습니다.',
-      // });
 
       // 피드를 생성합니다.
       const feed = await Feeds.create({

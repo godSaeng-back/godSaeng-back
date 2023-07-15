@@ -4,8 +4,7 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const path = require('path');
-// const Sequelize = require('sequelize');
-const checkLogin = require('../middlewares/checkLogin.js'); //유저아이디받기
+const checkLogin = require('../middlewares/checkLogin.js');
 const { Feeds, Users, FeedImages } = require('../models');
 const { Op, Sequelize } = require('sequelize');
 
@@ -375,11 +374,6 @@ router.put(
           where: { feedId },
         }
       );
-
-      // 기존에 연결된 이미지들을 삭제
-      // await FeedImages.destroy({
-      //   where: { FeedId: feedId },
-      // });
 
       // 각 이미지를 서버에 저장하고 경로를 DB에 저장합니다.
       const currentImages = await FeedImages.findAll({

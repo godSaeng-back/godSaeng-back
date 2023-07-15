@@ -71,6 +71,20 @@ router.post('/comment/:shareId', checkLogin, async (req, res) => {
     });
   }
 
+  // 댓글 내용이 있는지 확인
+  if (!content) {
+    return res.status(400).json({
+      message: '댓글 내용을 입력해주세요.',
+    });
+  }
+
+  // 로그인하지 않은 사용자가 댓글을 작성하는 경우
+  if (!userId) {
+    return res.status(401).json({
+      message: '로그인 후 이용해주세요.',
+    });
+  }
+
   function generateFunnyNickname() {
     const randomAdjective =
       adjectives[Math.floor(Math.random() * adjectives.length)];

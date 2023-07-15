@@ -5,19 +5,14 @@ const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const path = require('path');
 const checkLogin = require('../middlewares/checkLogin.js');
-const {
-  Shares,
-  Users,
-  Likes,
-  ViewCounts,
-  Feeds,
-  FeedImages,
-  sequelize,
-} = require('../models');
+const jwt = require('jsonwebtoken');
+const jwtSecret = "checkLogin_key";
+const { Shares, Users, Likes } = require('../models');
 const adjectives = require('./adjectives');
 const nouns = require('./nouns');
 
 const { Op, Sequelize } = require('sequelize');
+const { log } = require('console');
 
 require('dotenv').config();
 
@@ -116,6 +111,7 @@ router.get('/share/list', async (req, res) => {
 
   try {
     const shares = await Shares.findAll({
+      attributes: ['shareId','UserId', 'title', 'content', 'shareName', 'imagePath', 'anonymous', 'viewCount', 'createdAt', 'updatedAt'],
       order: [['createdAt', 'DESC']],
       include: [
         {
@@ -132,12 +128,8 @@ router.get('/share/list', async (req, res) => {
       const likesCount = await Likes.count({
         where: { ShareId: share.shareId },
       });
-      const viewsCount = await ViewCounts.count({
-        where: { ShareId: share.shareId },
-      });
 
       share.setDataValue('likeCount', likesCount);
-      share.setDataValue('viewCount', viewsCount);
     }
 
     const response = new ApiResponse(200, '공유글 목록 조회 성공', shares);
@@ -203,17 +195,19 @@ router.post('/share', checkLogin, async (req, res) => {
 router.get('/share/:shareId', async (req, res) => {
   try {
     const { shareId } = req.params;
+    
     let userId = null;
 
-    // 로그인한 사용자가 있다면 userId 추출
-    if (res.locals.user) {
-      userId = res.locals.user.userId;
+    const token = req.headers.authorization?.split('Bearer ')[1]; // 토큰에서 userId 추출
+    if (token) {
+      const decoded = jwt.verify(token, jwtSecret); // 토큰 검증
+      userId = decoded.userId;
     }
 
     // Shares 테이블에서 게시글 가져오기
     const share = await Shares.findOne({
       where: { shareId }, 
-      attributes: ['shareId','UserId', 'title', 'content', 'shareName', 'imagePath', 'anonymous', 'createdAt', 'updatedAt'], 
+      attributes: ['shareId','UserId', 'title', 'content', 'shareName', 'imagePath', 'anonymous', 'viewCount', 'createdAt', 'updatedAt'], 
       include: [
         {
           model: Users,   // 게시글 작성자 정보
@@ -222,40 +216,38 @@ router.get('/share/:shareId', async (req, res) => {
       ],
     });
 
-    // 로그인한 사용자가 있고, 게시글 작성자가 아닐 때만 조회수 업데이트
-    if (userId && share.UserId !== userId) {
-      // 이미 조회한 적 있는지 확인
-      const viewed = await ViewCounts.findOne({
-        where: { ShareId: shareId, UserId: userId },
-      });
-
-      // 사용자가 해당 게시글을 처음 조회하는 경우에만 조회수를 증가시킵니다.
-      if (!viewed) {
-        await ViewCounts.create({
-          UserId: userId,
-          ShareId: shareId,
-        });
-      }
+    // 공유글이 존재하지 않는 경우
+    if (!share) {
+      const response = new ApiResponse(404, '공유글이 존재하지 않습니다.');
+      return res.status(404).json(response);
     }
+
+    // 조회수를 증가시킵니다.
+    share.viewCount += 1;
+    await share.save();
 
     // 좋아요 수를 계산합니다.
     const likesCount = await Likes.count({ where: { ShareId: shareId } });
-
-    // 업데이트된 조회수를 계산합니다.
-    const viewsCount = await ViewCounts.count({ where: { ShareId: shareId } });
 
     // 로그인한 사용자가 있다면, 좋아요를 누른 사용자 목록을 가져옵니다.
     let likers = null;
     if (userId) {
       likers = await Likes.findOne({
         where: { UserId: userId, ShareId: shareId },
-        attributes: ['UserId'],
+        attributes: [],
+        include: [
+          {
+            model: Users,
+            attributes: [ 'userId', 'nickname', 'profileImage', 'totalPointScore'],
+          },
+        ],
       });
+    } else {
+      likers = null;
     }
 
-    // 좋아요 수와 조회수를 추가합니다.
+    // 좋아요 수 추가합니다.
     share.setDataValue('likeCount', likesCount);
-    share.setDataValue('viewCount', viewsCount);
     share.setDataValue('likers', likers);
 
     const response = new ApiResponse(200, '공유글 상세 조회 성공', share);
@@ -265,6 +257,5 @@ router.get('/share/:shareId', async (req, res) => {
     return res.status(500).json({ error: '서버 오류입니다.' });
   }
 });
-
 
 module.exports = router;

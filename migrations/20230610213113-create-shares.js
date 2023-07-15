@@ -37,6 +37,9 @@ module.exports = {
       anonymous: {
         type: Sequelize.BOOLEAN,
       },
+      viewCount: {
+        type: Sequelize.INTEGER,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

@@ -68,10 +68,6 @@ router.get('/graph/:type/:period?', checkLogin, async (req, res) => {
 
     // 피드 통계를 계산합니다.
     const totalFeedDays = allFeeds.length;
-    // const totalPointScore = allFeeds.reduce((acc, feed) => {
-    //   const pointScore = (feed.FeedImages.length > 0 ? 2 : 0) + (feed.emotion ? 3 : 0);
-    //   return acc + pointScore;
-    // }, 0);
 
     // 기간에 해당하는 피드를 필터링합니다.
     const periodFeeds = allFeeds.filter((feed) => {

@@ -200,7 +200,7 @@ router.post('/share', checkLogin, async (req, res) => {
 });
 
 // 공유글 상세 조회
-router.get('/share/:shareId', checkLogin, async (req, res) => {
+router.get('/share/:shareId', async (req, res) => {
   try {
     const { shareId } = req.params;
     const { userId } = res.locals.user;

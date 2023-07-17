@@ -53,6 +53,7 @@ router.get('/mypage', checkLogin, async (req, res) => {
     // 사용자가 작성한 모든 Shares 가져오기
     const sharedShares = await Shares.findAll({
       where: { UserId: userId },
+      order: [['createdAt', 'DESC']],
       attributes: ['shareId', 'title', 'content', 'shareName', 'imagePath', 'viewCount', 'createdAt', 'updatedAt'],
     });
 
@@ -69,6 +70,7 @@ router.get('/mypage', checkLogin, async (req, res) => {
     // 사용자가 좋아요를 누른 게시물 가져오기
     const likedShares = await Likes.findAll({
       where: { UserId: userId },
+      order: [['createdAt', 'DESC']],
       include: [
         {
           model: Shares,

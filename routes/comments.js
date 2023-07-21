@@ -85,19 +85,27 @@ router.post('/comment/:shareId', checkLogin, async (req, res) => {
     });
   }
 
-  function generateFunnyNickname() {
-    const randomAdjective =
-      adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  // 댓글 작성 시 사용할 임의의 닉네임 생성
+  // function generateFunnyNickname() {
+  //   const randomAdjective =
+  //     adjectives[Math.floor(Math.random() * adjectives.length)];
+  //   const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
 
-    return randomAdjective + ' ' + randomNoun;
-  }
-  const randomNickname = generateFunnyNickname();
+  //   return randomAdjective + ' ' + randomNoun;
+  // }
+  // const randomNickname = generateFunnyNickname();
+
+    // 사용자 정보를 찾아서 닉네임을 가져옴
+    const user = await Users.findOne({
+      where: { UserId: userId },
+    });
+    const userNickname = user.nickname;
 
   try {
     // 공유글을 작성한 사용자가 댓글을 작성하는 경우, 공유글 작성 시 사용한 닉네임을 사용하고
     // 그 외의 경우에는 임의의 닉네임을 사용
-    const commentName = share.UserId === userId ? share.shareName : randomNickname;
+    // const commentName = share.UserId === userId ? share.shareName : randomNickname;
+    const commentName = share.UserId === userId ? share.shareName : userNickname;
 
     const comment = await Comment.create({
       UserId: userId,

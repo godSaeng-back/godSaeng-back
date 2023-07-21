@@ -49,6 +49,19 @@ router.post("/signup", async (req, res, next) => {
       res.status(412).json(response);
       return;
     }
+
+    // 허용된 이메일 도메인 확인
+    const allowedDomains = ["naver.com", "hanmail.net", "gmail.com", "daum.net"];
+    const domain = email.substring(email.lastIndexOf("@") + 1);
+    if (!allowedDomains.includes(domain)) {
+      const response = new ApiResponse(
+        412,
+        "네이버, 다음, 지메일만 회원가입 가능합니다."
+      );
+      res.status(412).json(response);
+      return;
+    }
+
     // 닉네임 형식확인: 알파벳 대소문자, 숫자, 4~20자
     const nickCheck = XRegExp("^([\\p{L}\\p{N}!@#$%^&*()\\-_=?/+]{1,8})$");
     if (!nickCheck.test(nickname)) {
